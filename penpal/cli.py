@@ -9,6 +9,7 @@ from .advisor import build_suggestions
 from .api import serve
 from .ingest import extract_evidence
 from .nmap_parser import NmapParseError, parse_nmap_xml
+from .playbooks import scan_notes_vault
 from .runner import RunnerError, run_plan
 from .scan_profiles import PROFILE_CHOICES, build_scan_plan, format_command
 from .summary import render_summary
@@ -110,6 +111,11 @@ def build_parser() -> argparse.ArgumentParser:
     summary_cmd.add_argument("name", help="Target name.")
     summary_cmd.add_argument("--write", action="store_true", help="Write summary to notes.md.")
     summary_cmd.set_defaults(func=cmd_summary)
+
+    notes_cmd = subcommands.add_parser("notes", help="Validate PenPal parse blocks in an HTB notes vault.")
+    notes_cmd.add_argument("vault", help="Path to the Obsidian or HTB notes vault.")
+    notes_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    notes_cmd.set_defaults(func=cmd_notes)
 
     serve_cmd = subcommands.add_parser("serve", help="Start the JSON API for a future frontend.")
     serve_cmd.add_argument("--host", default="127.0.0.1")
@@ -351,6 +357,26 @@ def cmd_summary(args: argparse.Namespace, workspace: Workspace) -> int:
         print(f"wrote {notes_path}")
     else:
         print(rendered)
+    return 0
+
+
+def cmd_notes(args: argparse.Namespace, workspace: Workspace) -> int:
+    report = scan_notes_vault(args.vault)
+    if args.json:
+        print(json.dumps(report.to_dict(), indent=2))
+        return 1 if report.errors else 0
+
+    print(f"vault: {report.vault}")
+    print(f"markdown files: {report.markdown_files}")
+    print(f"penpal-ready notes: {report.penpal_notes}")
+    print(f"methodology blocks: {report.methodology_blocks}")
+    print(f"evidence rule blocks: {report.evidence_rule_blocks}")
+    print(f"invalid blocks: {len(report.errors)}")
+    if report.errors:
+        print("\nInvalid blocks:")
+        for block in report.errors:
+            print(f"- {block.path}:{block.line} [{block.kind}] {block.error}")
+        return 1
     return 0
 
 
