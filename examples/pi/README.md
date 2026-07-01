@@ -15,10 +15,19 @@ It uses PI custom tools to read PenPal's deterministic context and playbook data
 Copy the example into a PI extension location, then point it at this repository:
 
 ```bash
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+pi --version
+pi
+/login
+```
+
+```bash
 export PENPAL_CWD=/path/to/penpal
 export PENPAL_WORKSPACE=penpal-workspace
 pi -e ./penpal-extension.example.ts
 ```
+
+If `pi --list-models` says no models are available, finish `/login` before testing the extension.
 
 The extension exposes:
 

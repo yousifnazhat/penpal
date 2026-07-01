@@ -39,11 +39,27 @@ Do not publish from automation unless the maintainer explicitly asks for a commi
 
 Start with the read-only PI extension in `examples/pi/`.
 
+Install PI:
+
+```bash
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+pi --version
+```
+
+Log into a model provider from PI before testing the extension:
+
+```bash
+pi
+/login
+```
+
 ```bash
 export PENPAL_CWD=/path/to/penpal
 export PENPAL_WORKSPACE=penpal-workspace
 pi -e ./examples/pi/penpal-extension.example.ts
 ```
+
+Do not commit provider tokens or API keys. PI stores OAuth/API-key auth outside this repository.
 
 Keep mutating tools disabled until operator approval is implemented and tested.
 
