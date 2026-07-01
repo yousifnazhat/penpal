@@ -1,0 +1,61 @@
+{
+  "actions": [
+    {
+      "commands": [
+        "snmpwalk -v2c -c <community> <target_host>",
+        "python -m penpal ingest <target_name> --file ./snmpwalk.txt --source snmpwalk --service udp/161"
+      ],
+      "description": "When a community string is known and in scope, collect SNMP output and feed it back into PenPal.",
+      "id": "collect-snmp-output",
+      "risk": "normal"
+    },
+    {
+      "commands": [
+        "python -m penpal evidence <target_name>",
+        "python -m penpal suggest <target_name>"
+      ],
+      "description": "Review extracted usernames, hostnames, domains, and credential-looking strings before any credentialed checks.",
+      "id": "review-snmp-derived-facts",
+      "risk": "passive"
+    }
+  ],
+  "description": "Use SNMP-derived facts to focus authorized mail and remote-access enumeration without chasing low-value rabbit holes.",
+  "id": "snmp-mail-remote",
+  "safety": {
+    "authorized_use_only": true,
+    "requires_operator_approval": true
+  },
+  "schema": "penpal-playbook-v1",
+  "signals": [
+    {
+      "port": 161,
+      "protocol": "udp",
+      "type": "service"
+    },
+    {
+      "ports": [
+        110,
+        143,
+        993,
+        995
+      ],
+      "type": "service_any"
+    },
+    {
+      "ports": [
+        22,
+        445,
+        3389,
+        5985,
+        5986
+      ],
+      "type": "service_any"
+    }
+  ],
+  "tags": [
+    "snmp",
+    "mail",
+    "remote-access"
+  ],
+  "title": "SNMP to mail to remote access"
+}

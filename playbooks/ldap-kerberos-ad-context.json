@@ -1,0 +1,52 @@
+{
+  "actions": [
+    {
+      "commands": [
+        "ldapsearch -x -H ldap://<target_host> -s base namingcontexts",
+        "ldapsearch -x -H ldap://<target_host> -b <domain_dn> \"(objectClass=*)\" dn"
+      ],
+      "description": "Identify naming contexts and check what LDAP exposes without credentials.",
+      "id": "identify-ldap-context",
+      "risk": "normal"
+    },
+    {
+      "commands": [
+        "nxc smb <target_host> --shares -u <known_user> -p <known_password>",
+        "python -m penpal ingest <target_name> --file ./ad-context.txt --source ad-enum"
+      ],
+      "description": "Use only known valid credentials for deeper SMB/AD context after scope and authorization are clear.",
+      "id": "credentialed-ad-context",
+      "risk": "approval_required"
+    }
+  ],
+  "description": "Use LDAP, Kerberos, and SMB signals to establish Active Directory context before choosing deeper checks.",
+  "id": "ldap-kerberos-ad-context",
+  "safety": {
+    "authorized_use_only": true,
+    "requires_operator_approval": true
+  },
+  "schema": "penpal-playbook-v1",
+  "signals": [
+    {
+      "ports": [
+        88,
+        389,
+        636
+      ],
+      "type": "service_any"
+    },
+    {
+      "ports": [
+        445
+      ],
+      "type": "service_any"
+    }
+  ],
+  "tags": [
+    "active-directory",
+    "ldap",
+    "kerberos",
+    "smb"
+  ],
+  "title": "LDAP and Kerberos to AD context"
+}

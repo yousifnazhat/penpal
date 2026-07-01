@@ -4,12 +4,14 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from .advisor import build_suggestions
 from .api import serve
+from .context import build_context
 from .ingest import extract_evidence
 from .nmap_parser import NmapParseError, parse_nmap_xml
-from .playbooks import scan_notes_vault
+from .playbooks import find_playbook, format_playbook, load_playbooks, scan_notes_vault, scan_playbooks
 from .runner import RunnerError, run_plan
 from .scan_profiles import PROFILE_CHOICES, build_scan_plan, format_command
 from .summary import render_summary
@@ -77,15 +79,24 @@ def build_parser() -> argparse.ArgumentParser:
     ingest_cmd.add_argument("--file", help="Text file to ingest. If omitted, reads piped stdin.")
     ingest_cmd.add_argument("--source", default="paste", help="Source label, such as snmpwalk or feroxbuster.")
     ingest_cmd.add_argument("--service", default="", help="Related service key, such as tcp/80 or udp/161.")
+    ingest_cmd.add_argument("--playbooks", default="playbooks", help="Community playbook file or directory.")
     ingest_cmd.add_argument("--reveal-secrets", action="store_true", help="Render sensitive parameters inside syntax examples.")
     ingest_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     ingest_cmd.set_defaults(func=cmd_ingest)
 
     suggest_cmd = subcommands.add_parser("suggest", help="Show deterministic next-step suggestions.")
     suggest_cmd.add_argument("name", help="Target name.")
+    suggest_cmd.add_argument("--playbooks", default="playbooks", help="Community playbook file or directory.")
     suggest_cmd.add_argument("--reveal-secrets", action="store_true", help="Render sensitive parameters inside syntax examples.")
     suggest_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     suggest_cmd.set_defaults(func=cmd_suggest)
+
+    context_cmd = subcommands.add_parser("context", help="Emit PI-friendly target context JSON.")
+    context_cmd.add_argument("name", help="Target name.")
+    context_cmd.add_argument("--playbooks", default="playbooks", help="Community playbook file or directory.")
+    context_cmd.add_argument("--reveal-secrets", action="store_true", help="Include sensitive parameters and evidence.")
+    context_cmd.add_argument("--json", action="store_true", help="Emit raw JSON. Context output is always JSON.")
+    context_cmd.set_defaults(func=cmd_context)
 
     params_cmd = subcommands.add_parser("params", help="Manage target parameters used to fill command placeholders.")
     params_cmd.add_argument("name", help="Target name.")
@@ -116,6 +127,12 @@ def build_parser() -> argparse.ArgumentParser:
     notes_cmd.add_argument("vault", help="Path to the Obsidian or HTB notes vault.")
     notes_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     notes_cmd.set_defaults(func=cmd_notes)
+
+    playbooks_cmd = subcommands.add_parser("playbooks", help="Validate community playbook JSON files.")
+    playbooks_cmd.add_argument("path", help="Path to a playbook JSON file or directory.")
+    playbooks_cmd.add_argument("--show", help="Print one validated playbook by id.")
+    playbooks_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    playbooks_cmd.set_defaults(func=cmd_playbooks)
 
     serve_cmd = subcommands.add_parser("serve", help="Start the JSON API for a future frontend.")
     serve_cmd.add_argument("--host", default="127.0.0.1")
@@ -227,6 +244,7 @@ def cmd_ingest(args: argparse.Namespace, workspace: Workspace) -> int:
         target_name=target.name,
         parameters=workspace.load_parameters(target.name),
         reveal_secrets=args.reveal_secrets,
+        playbooks=load_playbooks(args.playbooks),
     )
 
     if args.json:
@@ -257,6 +275,7 @@ def cmd_ingest(args: argparse.Namespace, workspace: Workspace) -> int:
         for suggestion in suggestions[:5]:
             print(f"- {suggestion.title} [{suggestion.confidence}/{suggestion.value}/{suggestion.risk}]")
             print(f"  {suggestion.reason}")
+            _print_suggestion_match(suggestion, indent="  ")
             if suggestion.command_examples:
                 print("  Syntax:")
                 for command in suggestion.command_examples[:3]:
@@ -273,6 +292,7 @@ def cmd_suggest(args: argparse.Namespace, workspace: Workspace) -> int:
         target_name=target.name,
         parameters=workspace.load_parameters(target.name),
         reveal_secrets=args.reveal_secrets,
+        playbooks=load_playbooks(args.playbooks),
     )
     if args.json:
         print(json.dumps({"suggestions": [suggestion.to_dict() for suggestion in suggestions]}, indent=2))
@@ -285,6 +305,7 @@ def cmd_suggest(args: argparse.Namespace, workspace: Workspace) -> int:
     for suggestion in suggestions:
         print(f"{suggestion.title} [{suggestion.confidence}/{suggestion.value}/{suggestion.risk}]")
         print(f"Reason: {suggestion.reason}")
+        _print_suggestion_match(suggestion)
         if suggestion.supporting_facts:
             print("Supporting facts:")
             for fact in suggestion.supporting_facts[:8]:
@@ -297,6 +318,21 @@ def cmd_suggest(args: argparse.Namespace, workspace: Workspace) -> int:
             for command in suggestion.command_examples:
                 print(f"- {command}")
         print()
+    return 0
+
+
+def cmd_context(args: argparse.Namespace, workspace: Workspace) -> int:
+    print(
+        json.dumps(
+            build_context(
+                workspace,
+                args.name,
+                playbooks_path=args.playbooks,
+                reveal_secrets=args.reveal_secrets,
+            ),
+            indent=2,
+        )
+    )
     return 0
 
 
@@ -380,6 +416,32 @@ def cmd_notes(args: argparse.Namespace, workspace: Workspace) -> int:
     return 0
 
 
+def cmd_playbooks(args: argparse.Namespace, workspace: Workspace) -> int:
+    if args.show:
+        playbook = find_playbook(load_playbooks(args.path), args.show)
+        if args.json:
+            print(json.dumps(playbook, indent=2))
+        else:
+            print(format_playbook(playbook))
+        return 0
+
+    report = scan_playbooks(args.path)
+    if args.json:
+        print(json.dumps(report.to_dict(), indent=2))
+        return 1 if report.errors else 0
+
+    print(f"path: {report.root}")
+    print(f"json files: {report.json_files}")
+    print(f"valid playbooks: {report.valid_playbooks}")
+    print(f"invalid playbooks: {len(report.errors)}")
+    if report.errors:
+        print("\nInvalid playbooks:")
+        for playbook in report.errors:
+            print(f"- {playbook.path}: {playbook.error}")
+        return 1
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace, workspace: Workspace) -> int:
     workspace.ensure()
     serve(workspace, host=args.host, port=args.port)
@@ -397,6 +459,36 @@ def _read_ingest_text(file_path: str | None) -> str:
 def _looks_sensitive(name: str) -> bool:
     lowered = name.lower()
     return any(token in lowered for token in ["pass", "password", "secret", "token", "key", "hash"])
+
+
+def _print_suggestion_match(suggestion: Any, indent: str = "") -> None:
+    lines = _matched_signal_lines(suggestion.metadata)
+    if not lines:
+        return
+    print(f"{indent}Why this fired:")
+    for line in lines:
+        print(f"{indent}- {line}")
+
+
+def _matched_signal_lines(metadata: dict[str, Any]) -> list[str]:
+    if metadata.get("source") != "playbook":
+        return []
+    matches = metadata.get("matched_signals")
+    if not isinstance(matches, list):
+        return []
+
+    lines: list[str] = []
+    for match in matches:
+        if not isinstance(match, dict):
+            continue
+        signal_type = str(match.get("type") or "signal")
+        facts = match.get("facts")
+        if not isinstance(facts, list):
+            continue
+        for fact in facts:
+            if isinstance(fact, str) and fact.strip():
+                lines.append(f"{signal_type}: {fact}")
+    return lines[:8]
 
 
 if __name__ == "__main__":

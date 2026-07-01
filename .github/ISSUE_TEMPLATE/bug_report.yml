@@ -1,0 +1,35 @@
+name: Bug report
+description: Report incorrect parsing, masking, validation, or suggestions.
+title: "Bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Minimal command, sample input, or playbook that reproduces it.
+      placeholder: |
+        python -m penpal playbooks playbooks
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety impact
+      options:
+        - label: This may expose sensitive values.
+        - label: This may suggest unsafe or unauthorized actions.
+        - label: This may incorrectly validate or reject a playbook.

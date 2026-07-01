@@ -33,8 +33,10 @@ python -m penpal params nibbles set community public
 python -m penpal params nibbles set known_user daniel
 python -m penpal params nibbles set known_password "Winter2024!" --sensitive
 python -m penpal suggest nibbles
-python -m penpal suggest nibbles --reveal-secrets
+python -m penpal context nibbles --json
 python -m penpal summary nibbles --write
+python -m penpal playbooks playbooks
+python -m penpal playbooks playbooks --show snmp-mail-remote
 python -m penpal serve
 ```
 
@@ -57,10 +59,14 @@ python -m penpal params nibbles set known_user daniel
 python -m penpal params nibbles set known_password "Winter2024!" --sensitive
 python -m penpal params nibbles list
 python -m penpal suggest nibbles
+
+# Optional: intentionally print complete command syntax with sensitive values.
 python -m penpal suggest nibbles --reveal-secrets
 ```
 
 Sensitive values are stored locally in `parameters.json` and masked by default in output. Use `--reveal-secrets` only when you intentionally want complete command syntax printed.
+
+For PI or frontend integrations, `python -m penpal context <name> --json` returns a single masked snapshot of the target, services, evidence, parameters, deterministic suggestions, playbook match metadata, and Markdown summary.
 
 By default, generated target data lives under:
 
@@ -93,7 +99,10 @@ python -m penpal params <name> list
 python -m penpal params <name> set <key> <value>
 python -m penpal params <name> unset <key>
 python -m penpal suggest <name>
+python -m penpal context <name> --json
 python -m penpal summary <name> --write
+python -m penpal playbooks <json-file-or-directory>
+python -m penpal playbooks <json-file-or-directory> --show <playbook-id>
 python -m penpal serve --host 127.0.0.1 --port 8765
 ```
 
@@ -110,6 +119,7 @@ The API is intentionally small and frontend-friendly:
 - `GET /api/targets/<name>/evidence`
 - `GET /api/targets/<name>/parameters`
 - `GET /api/targets/<name>/suggestions`
+- `GET /api/targets/<name>/context`
 - `GET /api/targets/<name>/summary`
 - `POST /api/targets`
 - `POST /api/targets/<name>/parse-nmap`
@@ -129,7 +139,14 @@ This backend does not try to exploit targets or hide commands. It is meant to ma
 For the product direction and architecture, see:
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Setup](docs/SETUP.md)
+- [Harness Strategy](docs/HARNESS_STRATEGY.md)
+- [MCP Adapter Plan](docs/MCP_ADAPTER.md)
 - [Product Principles](docs/PRODUCT_PRINCIPLES.md)
+- [PI Adapter Contract](docs/PI_ADAPTER.md)
+- [PI Example](examples/pi/README.md)
+- [Playbook Authoring](playbooks/README.md)
+- [v1 Release Checklist](docs/V1_RELEASE_CHECKLIST.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Intelligence Loop](docs/INTELLIGENCE_LOOP.md)
 - [Source Policy](docs/SOURCE_POLICY.md)
@@ -156,3 +173,19 @@ The first extractor looks for high-signal items:
 - plaintext Nmap-style service hints
 
 It stores these in `evidence.json`, keeps source context, and prints deterministic suggestions when the evidence connects to discovered services.
+
+## Community Playbooks
+
+Community playbooks live in `playbooks/` as `penpal-playbook-v1` JSON files. They describe evidence-backed enumeration paths, required signals, visible commands, and safety flags. The first built-in examples cover SNMP-to-mail, HTTP vhosts, SMB share review, and AD context.
+
+Valid playbooks are loaded by `suggest` and matched against recorded services and evidence. Matching playbooks become normal deterministic suggestions with visible commands.
+
+In JSON output, playbook-backed suggestions include `metadata.matched_signals` so an agent or frontend can explain exactly why the playbook fired.
+
+Validate them before contributing:
+
+```powershell
+python -m penpal playbooks playbooks
+python -m penpal playbooks playbooks --show http-vhosts-hidden-apps
+python -m unittest discover -v
+```
