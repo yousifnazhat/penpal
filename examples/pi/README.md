@@ -33,6 +33,7 @@ The extension exposes:
 
 - `penpal_context`
 - `penpal_suggest`
+- `penpal_evidence`
 - `penpal_playbooks_validate`
 - `penpal_playbook_show`
 
@@ -63,6 +64,7 @@ Then prove PI can read context and suggestions:
 ```bash
 PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_context -e ./examples/pi/penpal-extension.example.ts -p "Use penpal_context for target demo once. Return the schema, target host, open services, suggestion titles, and any playbook matched_signals."
 PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_suggest -e ./examples/pi/penpal-extension.example.ts -p "Use penpal_suggest for target demo once. Return the suggestion titles, reasons, and first command example for each. Do not invent anything."
+PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_evidence -e ./examples/pi/penpal-extension.example.ts -p "Use penpal_evidence for target demo once. Return only the evidence count and evidence types."
 ```
 
 Keep the first integration read-only by default. `penpal_ingest` is registered only when `PENPAL_ENABLE_MUTATING_TOOLS=true`; it requires an operator confirmation, a non-empty source, and bounded input before ingesting anything.
