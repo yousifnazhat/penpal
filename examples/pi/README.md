@@ -41,6 +41,14 @@ The extension exposes:
 
 Run these from the repository root after PI login. `--no-builtin-tools` proves PI is using the PenPal extension tool, not shell fallback.
 
+| Tool | Mode | Expected proof |
+| --- | --- | --- |
+| `penpal_playbooks_validate` | forced, non-interactive | `4` valid playbooks and `0` invalid playbooks |
+| `penpal_context` | forced, non-interactive | `penpal-context-v1`, demo host, open services, and matched signals |
+| `penpal_suggest` | forced, non-interactive | deterministic suggestion titles, reasons, and command examples |
+| `penpal_evidence` | forced, non-interactive | evidence count and evidence types after ingesting demo evidence |
+| `penpal_playbook_show` | forced, non-interactive | `snmp-mail-remote` title, signals, and safety flags |
+
 ```bash
 PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_playbooks_validate -e ./examples/pi/penpal-extension.example.ts -p "Use the penpal_playbooks_validate tool once. Return only valid_playbooks and invalid_playbooks."
 ```
@@ -52,11 +60,17 @@ valid_playbooks: 4
 invalid_playbooks: 0
 ```
 
-Create a demo target with services:
+Create a demo target with services and evidence:
 
 ```bash
 python3 -m penpal --workspace penpal-workspace init 10.10.10.5 --name demo --force
 python3 -m penpal --workspace penpal-workspace parse-nmap demo examples/pi/demo-nmap.xml
+python3 -m penpal --workspace penpal-workspace ingest demo --source snmpwalk-smoke --service udp/161 --json <<'EOF'
+SNMPv2-MIB::sysName.0 = STRING: mail01.example.local
+User: daniel
+email: daniel@example.local
+/backup.zip Status: 200, Size: 9001
+EOF
 ```
 
 Then prove PI can read context and suggestions:
@@ -65,6 +79,7 @@ Then prove PI can read context and suggestions:
 PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_context -e ./examples/pi/penpal-extension.example.ts -p "Use penpal_context for target demo once. Return the schema, target host, open services, suggestion titles, and any playbook matched_signals."
 PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_suggest -e ./examples/pi/penpal-extension.example.ts -p "Use penpal_suggest for target demo once. Return the suggestion titles, reasons, and first command example for each. Do not invent anything."
 PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_evidence -e ./examples/pi/penpal-extension.example.ts -p "Use penpal_evidence for target demo once. Return only the evidence count and evidence types."
+PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_playbook_show -e ./examples/pi/penpal-extension.example.ts -p "Use penpal_playbook_show for id snmp-mail-remote once. Return only the title, signals, and safety flags."
 ```
 
 Keep the first integration read-only by default. `penpal_ingest` is registered only when `PENPAL_ENABLE_MUTATING_TOOLS=true`; it requires an operator confirmation, a non-empty source, and bounded input before ingesting anything.

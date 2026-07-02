@@ -15,6 +15,7 @@ Use this before cutting the first public contributor-ready PenPal release.
 - [ ] Demo contract fixture protects context, evidence, and suggestion shapes.
 - [ ] Playbook matched-signal metadata is covered by a contract fixture.
 - [ ] CLI JSON outputs for context, evidence, and suggestions are covered by a contract fixture.
+- [ ] PI smoke matrix covers every shipped PI tool.
 
 ## Manual smoke test
 
