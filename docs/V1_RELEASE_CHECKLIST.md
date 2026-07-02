@@ -12,6 +12,7 @@ Use this before cutting the first public contributor-ready PenPal release.
 - [ ] Community playbooks have safety flags and visible commands.
 - [ ] PI integration remains read-only by default.
 - [ ] Sensitive parameters and credential-like evidence are masked by default.
+- [ ] Demo contract fixture protects context, evidence, and suggestion shapes.
 
 ## Manual smoke test
 
