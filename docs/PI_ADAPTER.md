@@ -50,6 +50,7 @@ These read-only tools are enough for the first PI integration:
 | --- | --- | --- |
 | `penpal_context` | Read `penpal context <target> --json` | Safe default |
 | `penpal_suggest` | Read `penpal suggest <target> --json` | Safe default |
+| `penpal_evidence` | Read `penpal evidence <target> --json` | Safe default |
 | `penpal_playbooks_validate` | Run `penpal playbooks playbooks` | Safe default |
 | `penpal_playbook_show` | Inspect one playbook | Safe default |
 
