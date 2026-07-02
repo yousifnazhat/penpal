@@ -2,6 +2,8 @@
 
 PenPal should treat PI as an agentic harness around a deterministic source of truth, not as the source of truth itself.
 
+The stable core contracts are tracked in [PenPal contracts](CONTRACTS.md).
+
 ## Role split
 
 - PenPal owns stored facts, parsing, playbook matching, command syntax, masking, and deterministic suggestions.

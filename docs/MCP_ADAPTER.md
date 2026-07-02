@@ -2,6 +2,8 @@
 
 MCP should make PenPal portable across agent clients without making any client the source of truth.
 
+MCP should reuse the stable contracts in [PenPal contracts](CONTRACTS.md) rather than introducing MCP-only shapes.
+
 ## Goal
 
 Expose the same safe PenPal primitives that PI uses:

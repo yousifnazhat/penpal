@@ -16,6 +16,7 @@ Use this before cutting the first public contributor-ready PenPal release.
 - [ ] Playbook matched-signal metadata is covered by a contract fixture.
 - [ ] CLI JSON outputs for context, evidence, and suggestions are covered by a contract fixture.
 - [ ] PI smoke matrix covers every shipped PI tool.
+- [ ] `docs/CONTRACTS.md` reflects the shipped harness contracts.
 
 ## Manual smoke test
 
