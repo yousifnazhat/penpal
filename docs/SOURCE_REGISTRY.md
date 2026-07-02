@@ -2,6 +2,8 @@
 
 This registry tracks sources that can inform PenPal rules, command templates, parsers, and methodology.
 
+Machine-readable crawl seeds live in `SOURCE_SEEDS.json`. Keep this registry and the seed manifest aligned when adding or removing source families.
+
 Status meanings:
 
 - `verified`: URL checked and source is suitable for reference.
@@ -46,7 +48,7 @@ Status meanings:
 | Web | PortSwigger Web Security Academy | https://portswigger.net/web-security | verified | Web vulnerability methodology and labs |
 | Labs | HTB Academy | https://academy.hackthebox.com/ | needs_review | User course notes and module-derived playbooks |
 | Methodology | TCM Security PNPT | https://certifications.tcm-sec.com/pnpt/ | verified | Professional pentest flow and reporting expectations |
-| Methodology | OffSec PEN-200 public materials | https://help.offsec.com/hc/en-us/sections/6970444968596-Penetration-Testing-with-Kali-Linux-PEN-200 | needs_review | High-level OSCP/PEN-200 methodology only |
+| Methodology | OffSec PEN-200 public materials | https://www.offsec.com/courses/pen-200/ | needs_review | High-level OSCP/PEN-200 methodology only |
 | Internal | User HTB/OSCP/CPTS notes | local notes workspace | needs_review | Primary personal playbook source |
 
 ## Community References

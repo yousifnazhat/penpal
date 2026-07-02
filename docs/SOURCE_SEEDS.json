@@ -1,0 +1,169 @@
+{
+  "schema": "penpal-source-seeds-v1",
+  "seeds": [
+    {
+      "id": "nmap",
+      "name": "Nmap official documentation",
+      "tier": "official",
+      "status": "verified",
+      "areas": ["network-scanning"],
+      "seed_urls": [
+        "https://nmap.org/docs.html",
+        "https://nmap.org/book/",
+        "https://nmap.org/book/man.html"
+      ],
+      "allowed_domains": ["nmap.org"],
+      "extract": ["command_syntax", "flags", "output_fields", "workflow"]
+    },
+    {
+      "id": "bloodhound",
+      "name": "BloodHound documentation",
+      "tier": "official",
+      "status": "verified",
+      "areas": ["active-directory"],
+      "seed_urls": ["https://bloodhound.specterops.io/get-started/introduction"],
+      "allowed_domains": ["bloodhound.specterops.io"],
+      "extract": ["terminology", "workflow", "data_model"]
+    },
+    {
+      "id": "impacket",
+      "name": "Fortra Impacket repository",
+      "tier": "official",
+      "status": "verified",
+      "areas": ["active-directory", "common-services"],
+      "seed_urls": ["https://github.com/fortra/impacket"],
+      "allowed_domains": ["github.com"],
+      "extract": ["tool_inventory", "command_syntax", "protocol_context"]
+    },
+    {
+      "id": "netexec",
+      "name": "NetExec wiki",
+      "tier": "official",
+      "status": "verified",
+      "areas": ["active-directory", "common-services"],
+      "seed_urls": ["https://www.netexec.wiki/"],
+      "allowed_domains": ["www.netexec.wiki"],
+      "extract": ["command_syntax", "modules", "workflow"]
+    },
+    {
+      "id": "ffuf",
+      "name": "ffuf repository",
+      "tier": "official",
+      "status": "verified",
+      "areas": ["web-recon"],
+      "seed_urls": ["https://github.com/ffuf/ffuf"],
+      "allowed_domains": ["github.com"],
+      "extract": ["command_syntax", "flags", "output_formats"]
+    },
+    {
+      "id": "feroxbuster",
+      "name": "feroxbuster documentation",
+      "tier": "official",
+      "status": "verified",
+      "areas": ["web-recon"],
+      "seed_urls": [
+        "https://epi052.github.io/feroxbuster-docs/",
+        "https://github.com/epi052/feroxbuster"
+      ],
+      "allowed_domains": ["epi052.github.io", "github.com"],
+      "extract": ["command_syntax", "flags", "output_formats"]
+    },
+    {
+      "id": "burp-suite",
+      "name": "Burp Suite documentation",
+      "tier": "official",
+      "status": "verified",
+      "areas": ["web-recon", "web-testing"],
+      "seed_urls": ["https://portswigger.net/burp/documentation"],
+      "allowed_domains": ["portswigger.net"],
+      "extract": ["tool_workflow", "terminology", "evidence_types"]
+    },
+    {
+      "id": "portswigger-academy",
+      "name": "PortSwigger Web Security Academy",
+      "tier": "methodology",
+      "status": "verified",
+      "areas": ["web-testing"],
+      "seed_urls": ["https://portswigger.net/web-security"],
+      "allowed_domains": ["portswigger.net"],
+      "extract": ["workflow", "vulnerability_taxonomy", "evidence_types"]
+    },
+    {
+      "id": "owasp-wstg",
+      "name": "OWASP Web Security Testing Guide",
+      "tier": "methodology",
+      "status": "verified",
+      "areas": ["web-testing"],
+      "seed_urls": ["https://owasp.org/www-project-web-security-testing-guide/"],
+      "allowed_domains": ["owasp.org"],
+      "extract": ["workflow", "test_categories", "evidence_types"]
+    },
+    {
+      "id": "mitre-attack",
+      "name": "MITRE ATT&CK",
+      "tier": "official",
+      "status": "verified",
+      "areas": ["taxonomy"],
+      "seed_urls": ["https://attack.mitre.org/"],
+      "allowed_domains": ["attack.mitre.org"],
+      "extract": ["taxonomy", "technique_mapping"]
+    },
+    {
+      "id": "microsoft-ad-security",
+      "name": "Microsoft Learn Active Directory security",
+      "tier": "official",
+      "status": "verified",
+      "areas": ["active-directory"],
+      "seed_urls": [
+        "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/best-practices-for-securing-active-directory"
+      ],
+      "allowed_domains": ["learn.microsoft.com"],
+      "extract": ["terminology", "defensive_context", "risk_model"]
+    },
+    {
+      "id": "hacktricks",
+      "name": "HackTricks",
+      "tier": "community",
+      "status": "community",
+      "areas": ["idea-generation"],
+      "seed_urls": ["https://book.hacktricks.xyz/"],
+      "allowed_domains": ["book.hacktricks.xyz"],
+      "extract": ["ideas", "checklists"],
+      "requires_verification": true
+    },
+    {
+      "id": "payloads-all-the-things",
+      "name": "PayloadsAllTheThings",
+      "tier": "community",
+      "status": "community",
+      "areas": ["idea-generation"],
+      "seed_urls": [
+        "https://github.com/swisskyrepo/PayloadsAllTheThings",
+        "https://swisskyrepo.github.io/PayloadsAllTheThings/"
+      ],
+      "allowed_domains": ["github.com", "swisskyrepo.github.io"],
+      "extract": ["ideas", "payload_references"],
+      "requires_verification": true
+    },
+    {
+      "id": "tcm-pnpt",
+      "name": "TCM Security PNPT public methodology",
+      "tier": "methodology",
+      "status": "needs_review",
+      "areas": ["methodology", "reporting"],
+      "seed_urls": ["https://certifications.tcm-sec.com/pnpt/"],
+      "allowed_domains": ["certifications.tcm-sec.com"],
+      "extract": ["workflow", "reporting_expectations"]
+    },
+    {
+      "id": "offsec-pen200-public",
+      "name": "OffSec PEN-200 public materials",
+      "tier": "methodology",
+      "status": "needs_review",
+      "areas": ["methodology"],
+      "seed_urls": ["https://www.offsec.com/courses/pen-200/"],
+      "allowed_domains": ["www.offsec.com"],
+      "extract": ["workflow", "course_scope"]
+    }
+  ]
+}
