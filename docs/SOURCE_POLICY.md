@@ -84,6 +84,13 @@ The crawl seed manifest lives in `SOURCE_SEEDS.json`. Raw crawl caches should st
 
 Free-to-read documentation is not the same as permission to republish full text. PenPal should keep source URLs and extracted facts, not mirrored documentation pages.
 
+Start with one source at a time:
+
+```bash
+python -m penpal sources list
+python -m penpal sources fetch nmap --url https://nmap.org/docs.html --json
+```
+
 ## Rule Requirements
 
 Every PenPal rule or playbook entry should eventually include:

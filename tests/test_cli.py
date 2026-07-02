@@ -89,6 +89,30 @@ class CliTests(unittest.TestCase):
         self.assertIn("- service: udp/161 snmp", output)
         self.assertIn("- service_any: tcp/143 imap", output)
 
+    def test_sources_list_json(self) -> None:
+        seeds = {
+            "schema": "penpal-source-seeds-v1",
+            "seeds": [
+                {
+                    "id": "nmap",
+                    "name": "Nmap official documentation",
+                    "tier": "official",
+                    "status": "verified",
+                    "areas": ["network-scanning"],
+                    "seed_urls": ["https://nmap.org/docs.html"],
+                    "allowed_domains": ["nmap.org"],
+                    "extract": ["command_syntax"],
+                }
+            ],
+        }
+        with TemporaryDirectory() as temp_dir:
+            seeds_path = Path(temp_dir) / "SOURCE_SEEDS.json"
+            seeds_path.write_text(json.dumps(seeds), encoding="utf-8")
+
+            data = run_json(["--workspace", temp_dir, "sources", "list", "--seeds", str(seeds_path), "--json"])
+
+        self.assertEqual(data["sources"][0]["id"], "nmap")
+
 
 def run_json(args: list[str]) -> dict:
     stdout = StringIO()

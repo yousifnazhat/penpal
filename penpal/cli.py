@@ -14,6 +14,7 @@ from .nmap_parser import NmapParseError, parse_nmap_xml
 from .playbooks import find_playbook, format_playbook, load_playbooks, scan_notes_vault, scan_playbooks
 from .runner import RunnerError, run_plan
 from .scan_profiles import PROFILE_CHOICES, build_scan_plan, format_command
+from .sources import DEFAULT_CACHE_DIR, DEFAULT_SEEDS_PATH, fetch_source_seed, load_source_seeds
 from .summary import render_summary
 from .workspace import DEFAULT_WORKSPACE, Workspace, WorkspaceError
 
@@ -133,6 +134,23 @@ def build_parser() -> argparse.ArgumentParser:
     playbooks_cmd.add_argument("--show", help="Print one validated playbook by id.")
     playbooks_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     playbooks_cmd.set_defaults(func=cmd_playbooks)
+
+    sources_cmd = subcommands.add_parser("sources", help="Inspect or fetch source dataset seeds.")
+    sources_subcommands = sources_cmd.add_subparsers(dest="sources_action", required=True)
+
+    sources_list_cmd = sources_subcommands.add_parser("list", help="List configured source seeds.")
+    sources_list_cmd.add_argument("--seeds", default=str(DEFAULT_SEEDS_PATH), help="Path to SOURCE_SEEDS.json.")
+    sources_list_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    sources_list_cmd.set_defaults(func=cmd_sources_list)
+
+    sources_fetch_cmd = sources_subcommands.add_parser("fetch", help="Fetch one allowed source seed URL.")
+    sources_fetch_cmd.add_argument("source_id", help="Source seed id, such as nmap or ffuf.")
+    sources_fetch_cmd.add_argument("--url", help="Specific seed URL to fetch. Defaults to the first seed URL.")
+    sources_fetch_cmd.add_argument("--seeds", default=str(DEFAULT_SEEDS_PATH), help="Path to SOURCE_SEEDS.json.")
+    sources_fetch_cmd.add_argument("--cache-dir", default=str(DEFAULT_CACHE_DIR), help="Ignored raw source cache directory.")
+    sources_fetch_cmd.add_argument("--timeout", type=int, default=15, help="Fetch timeout in seconds.")
+    sources_fetch_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    sources_fetch_cmd.set_defaults(func=cmd_sources_fetch)
 
     serve_cmd = subcommands.add_parser("serve", help="Start the JSON API for a future frontend.")
     serve_cmd.add_argument("--host", default="127.0.0.1")
@@ -439,6 +457,41 @@ def cmd_playbooks(args: argparse.Namespace, workspace: Workspace) -> int:
         for playbook in report.errors:
             print(f"- {playbook.path}: {playbook.error}")
         return 1
+    return 0
+
+
+def cmd_sources_list(args: argparse.Namespace, workspace: Workspace) -> int:
+    seeds = load_source_seeds(args.seeds)
+    if args.json:
+        print(json.dumps({"sources": seeds}, indent=2))
+        return 0
+
+    for seed in seeds:
+        areas = ", ".join(seed.get("areas", []))
+        print(f"{seed['id']:<24} {seed['tier']:<12} {seed['status']:<12} {areas}")
+    return 0
+
+
+def cmd_sources_fetch(args: argparse.Namespace, workspace: Workspace) -> int:
+    result = fetch_source_seed(
+        args.source_id,
+        url=args.url,
+        seeds_path=args.seeds,
+        cache_dir=args.cache_dir,
+        timeout=args.timeout,
+    )
+    data = result.to_dict()
+    if args.json:
+        print(json.dumps(data, indent=2))
+        return 0
+
+    print(f"source: {data['source']['id']} ({data['source']['tier']})")
+    print(f"url: {data['final_url']}")
+    print(f"status: {data['status']}")
+    print(f"bytes: {data['bytes']}")
+    print(f"cache: {data['cache_path']}")
+    for fact in data["facts"]:
+        print(f"- {fact['type']}: {fact['value']}")
     return 0
 
 
