@@ -89,9 +89,11 @@ Start with one source at a time:
 ```bash
 python -m penpal sources list
 python -m penpal sources fetch nmap --url https://nmap.org/docs.html --json
+python -m penpal sources reviewed --source-id nmap
 ```
 
 Fetched pages may emit `candidate` command or workflow facts; promote them into playbooks only after review against the cited source.
+Reviewed facts live in `SOURCE_FACTS.json`; they are intentionally small, cited, and safe to use as an eval/playbook backlog.
 
 ## Rule Requirements
 

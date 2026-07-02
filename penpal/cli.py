@@ -14,7 +14,14 @@ from .nmap_parser import NmapParseError, parse_nmap_xml
 from .playbooks import find_playbook, format_playbook, load_playbooks, scan_notes_vault, scan_playbooks
 from .runner import RunnerError, run_plan
 from .scan_profiles import PROFILE_CHOICES, build_scan_plan, format_command
-from .sources import DEFAULT_CACHE_DIR, DEFAULT_SEEDS_PATH, fetch_source_seed, load_source_seeds
+from .sources import (
+    DEFAULT_CACHE_DIR,
+    DEFAULT_FACTS_PATH,
+    DEFAULT_SEEDS_PATH,
+    fetch_source_seed,
+    load_reviewed_source_facts,
+    load_source_seeds,
+)
 from .summary import render_summary
 from .workspace import DEFAULT_WORKSPACE, Workspace, WorkspaceError
 
@@ -151,6 +158,12 @@ def build_parser() -> argparse.ArgumentParser:
     sources_fetch_cmd.add_argument("--timeout", type=int, default=15, help="Fetch timeout in seconds.")
     sources_fetch_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     sources_fetch_cmd.set_defaults(func=cmd_sources_fetch)
+
+    sources_reviewed_cmd = sources_subcommands.add_parser("reviewed", help="List reviewed source facts.")
+    sources_reviewed_cmd.add_argument("--facts", default=str(DEFAULT_FACTS_PATH), help="Path to SOURCE_FACTS.json.")
+    sources_reviewed_cmd.add_argument("--source-id", help="Filter by source seed id.")
+    sources_reviewed_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    sources_reviewed_cmd.set_defaults(func=cmd_sources_reviewed)
 
     serve_cmd = subcommands.add_parser("serve", help="Start the JSON API for a future frontend.")
     serve_cmd.add_argument("--host", default="127.0.0.1")
@@ -492,6 +505,17 @@ def cmd_sources_fetch(args: argparse.Namespace, workspace: Workspace) -> int:
     print(f"cache: {data['cache_path']}")
     for fact in data["facts"]:
         print(f"- {fact['type']}: {fact['value']}")
+    return 0
+
+
+def cmd_sources_reviewed(args: argparse.Namespace, workspace: Workspace) -> int:
+    facts = load_reviewed_source_facts(args.facts, source_id=args.source_id)
+    if args.json:
+        print(json.dumps({"schema": "penpal-reviewed-source-facts-v1", "facts": facts}, indent=2))
+        return 0
+
+    for fact in facts:
+        print(f"{fact['id']:<36} {fact['source_id']:<16} {fact['fact_type']:<16} {fact['safety']}")
     return 0
 
 

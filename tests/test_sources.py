@@ -4,7 +4,13 @@ import json
 import unittest
 from unittest.mock import patch
 
-from penpal.sources import fetch_source_seed, find_source_seed, load_source_seeds
+from penpal.sources import (
+    DEFAULT_FACTS_PATH,
+    fetch_source_seed,
+    find_source_seed,
+    load_reviewed_source_facts,
+    load_source_seeds,
+)
 
 
 SEEDS = {
@@ -41,6 +47,40 @@ class SourceTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "source seed not found"):
                 find_source_seed("missing", path)
+
+    def test_shipped_reviewed_source_facts_are_reviewed_and_cited(self) -> None:
+        facts = load_reviewed_source_facts(DEFAULT_FACTS_PATH, source_id="nmap")
+
+        self.assertEqual([fact["source_id"] for fact in facts], ["nmap", "nmap", "nmap"])
+        self.assertEqual({fact["review_status"] for fact in facts}, {"reviewed"})
+        self.assertTrue(all(fact["source_url"].startswith("https://") for fact in facts))
+
+    def test_reviewed_source_facts_reject_candidate_status(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "SOURCE_FACTS.json"
+            path.write_text(
+                json.dumps(
+                    {
+                        "schema": "penpal-reviewed-source-facts-v1",
+                        "facts": [
+                            {
+                                "id": "candidate-fact",
+                                "source_id": "nmap",
+                                "source_tier": "official",
+                                "source_url": "https://nmap.org/book/man.html",
+                                "fact_type": "workflow",
+                                "summary": "Candidate facts must not enter the reviewed fact set.",
+                                "review_status": "candidate",
+                                "safety": "evidence_only",
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "not reviewed"):
+                load_reviewed_source_facts(path)
 
     def test_fetch_source_seed_caches_raw_page_and_extracts_tiny_facts(self) -> None:
         html = b"""

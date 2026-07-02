@@ -13,11 +13,14 @@ from urllib.request import Request, urlopen
 
 SOURCE_SEEDS_SCHEMA = "penpal-source-seeds-v1"
 SOURCE_FETCH_SCHEMA = "penpal-source-fetch-v1"
+SOURCE_FACTS_SCHEMA = "penpal-reviewed-source-facts-v1"
 DEFAULT_SEEDS_PATH = Path(__file__).resolve().parents[1] / "docs" / "SOURCE_SEEDS.json"
+DEFAULT_FACTS_PATH = Path(__file__).resolve().parents[1] / "docs" / "SOURCE_FACTS.json"
 DEFAULT_CACHE_DIR = Path(".penpal-source-cache")
 MAX_SOURCE_BYTES = 2_000_000
 MAX_EXTRACTED_FACTS = 12
 MAX_FACT_LENGTH = 240
+MAX_REVIEWED_FACT_LENGTH = 280
 
 
 @dataclass
@@ -68,6 +71,30 @@ def find_source_seed(source_id: str, path: str | Path = DEFAULT_SEEDS_PATH) -> d
         if seed.get("id") == source_id:
             return seed
     raise ValueError(f"source seed not found: {source_id}")
+
+
+def load_reviewed_source_facts(
+    path: str | Path = DEFAULT_FACTS_PATH,
+    *,
+    source_id: str | None = None,
+) -> list[dict[str, Any]]:
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    if data.get("schema") != SOURCE_FACTS_SCHEMA:
+        raise ValueError(f"expected source facts schema {SOURCE_FACTS_SCHEMA}")
+    facts = data.get("facts")
+    if not isinstance(facts, list):
+        raise ValueError("source facts must be a list")
+
+    reviewed: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for fact in facts:
+        _validate_reviewed_fact(fact)
+        if fact["id"] in seen:
+            raise ValueError(f"duplicate source fact id: {fact['id']}")
+        seen.add(fact["id"])
+        if source_id is None or fact["source_id"] == source_id:
+            reviewed.append(fact)
+    return reviewed
 
 
 def fetch_source_seed(
@@ -138,6 +165,30 @@ def _require_allowed_url(url: str, seed: dict[str, Any]) -> None:
     allowed_domains = seed.get("allowed_domains", [])
     if not any(host == domain or host.endswith(f".{domain}") for domain in allowed_domains):
         raise ValueError(f"source URL host is not allowed for {seed.get('id')}: {host}")
+
+
+def _validate_reviewed_fact(fact: Any) -> None:
+    if not isinstance(fact, dict):
+        raise ValueError("source fact must be an object")
+    required = [
+        "id",
+        "source_id",
+        "source_tier",
+        "source_url",
+        "fact_type",
+        "summary",
+        "review_status",
+        "safety",
+    ]
+    for key in required:
+        if not isinstance(fact.get(key), str) or not fact[key].strip():
+            raise ValueError(f"source fact missing {key}")
+    if fact["review_status"] != "reviewed":
+        raise ValueError(f"source fact is not reviewed: {fact['id']}")
+    if urlparse(fact["source_url"]).scheme != "https":
+        raise ValueError(f"source fact URL must use https: {fact['id']}")
+    if len(fact["summary"]) > MAX_REVIEWED_FACT_LENGTH:
+        raise ValueError(f"source fact summary is too long: {fact['id']}")
 
 
 def _cache_path(cache_dir: str | Path, source_id: str, url: str) -> Path:

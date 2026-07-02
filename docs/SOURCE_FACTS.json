@@ -1,0 +1,36 @@
+{
+  "schema": "penpal-reviewed-source-facts-v1",
+  "facts": [
+    {
+      "id": "nmap-port-state-service-table",
+      "source_id": "nmap",
+      "source_tier": "official",
+      "source_url": "https://nmap.org/book/man.html",
+      "fact_type": "output_field",
+      "summary": "Nmap service tables should be treated as observed port, protocol, state, and service evidence before PenPal suggests follow-up enumeration.",
+      "review_status": "reviewed",
+      "safety": "evidence_only"
+    },
+    {
+      "id": "nmap-version-detail-followup",
+      "source_id": "nmap",
+      "source_tier": "official",
+      "source_url": "https://nmap.org/book/man.html",
+      "fact_type": "workflow",
+      "summary": "When open ports need better fingerprints, Nmap version detail can improve service-specific next-step selection.",
+      "review_status": "reviewed",
+      "safety": "active_visible"
+    },
+    {
+      "id": "nmap-aggressive-scan-needs-approval",
+      "source_id": "nmap",
+      "source_tier": "official",
+      "source_url": "https://nmap.org/book/man.html",
+      "fact_type": "command_safety",
+      "summary": "Aggressive Nmap scanning combines multiple active checks, so PenPal should keep it visible and operator-approved rather than hidden.",
+      "command_template": "nmap -A -T4 <target>",
+      "review_status": "reviewed",
+      "safety": "operator_approval_required"
+    }
+  ]
+}
