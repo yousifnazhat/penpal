@@ -18,12 +18,15 @@ Before a mutating tool runs, PI should show:
 
 - target name
 - workspace path
-- exact PenPal command or API operation
+- exact PenPal command argv or API operation
 - whether stored evidence, parameters, jobs, or files will change
 - whether sensitive values may be revealed
 - source of the input, such as operator paste, file path, or tool output
+- bounded input size
 
 The operator should approve the exact operation, not a vague category like "continue enumeration".
+
+Use an interactive PI session for mutating tools. Non-interactive `pi -p` cannot approve `ctx.ui.confirm`; treat a rejected confirmation as no mutation.
 
 ## Safe first mutating tool
 
@@ -33,8 +36,10 @@ Minimum approval text:
 
 ```text
 PenPal will ingest operator-provided text into target <target>.
+Command argv: <argv>
 Source: <source>
 Service: <service or none>
+Input bytes: <size>
 This may add evidence and trigger new deterministic suggestions.
 Approve?
 ```
@@ -51,4 +56,4 @@ Do not expose these as autonomous PI tools yet:
 
 Keep PI helpful, not sneaky.
 
-`penpal-ingest-tool.example.ts` shows this pattern, but it is not wired into the read-only PI extension.
+`penpal-ingest-tool.example.ts` shows this pattern and stays disabled unless `PENPAL_ENABLE_MUTATING_TOOLS=true`.

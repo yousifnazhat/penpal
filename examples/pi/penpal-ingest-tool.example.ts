@@ -7,6 +7,7 @@ const execFileAsync = promisify(execFile);
 const cwd = process.env.PENPAL_CWD ?? process.cwd();
 const python = process.env.PENPAL_PYTHON ?? "python3";
 const workspace = process.env.PENPAL_WORKSPACE;
+const maxIngestBytes = 200_000;
 
 export function registerPenpalIngestTool(pi: ExtensionAPI) {
   if (process.env.PENPAL_ENABLE_MUTATING_TOOLS !== "true") return;
@@ -22,6 +23,8 @@ export function registerPenpalIngestTool(pi: ExtensionAPI) {
       service: Type.Optional(Type.String({ description: "Related service key, such as tcp/80 or udp/161" })),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+      const error = validateIngestParams(params);
+      if (error) return textResult(error);
       const service = params.service ?? "";
       const command = [
         python,
@@ -34,14 +37,15 @@ export function registerPenpalIngestTool(pi: ExtensionAPI) {
         params.source,
         ...(service ? ["--service", service] : []),
         "--json",
-      ].join(" ");
+      ];
       const approved = await ctx.ui.confirm(
         [
-          `PenPal will ingest operator-provided text into target ${params.target}.`,
+          `PenPal will ingest operator-provided text into target ${JSON.stringify(params.target)}.`,
           `Workspace: ${workspace ?? "default"}`,
-          `Command: ${command}`,
-          `Source: ${params.source}`,
-          `Service: ${service || "none"}`,
+          `Command argv: ${JSON.stringify(command)}`,
+          `Source: ${JSON.stringify(params.source)}`,
+          `Service: ${service ? JSON.stringify(service) : "none"}`,
+          `Input bytes: ${Buffer.byteLength(params.text, "utf8")}`,
           "This may add evidence and trigger new deterministic suggestions.",
           "Approve?",
         ].join("\n"),
@@ -52,6 +56,16 @@ export function registerPenpalIngestTool(pi: ExtensionAPI) {
       return textResult(await penpalIngest(params, signal));
     },
   });
+}
+
+function validateIngestParams(params: { target: string; text: string; source: string; service?: string }): string {
+  if (!params.target.trim()) return "PenPal ingest rejected: target is required.";
+  if (!params.source.trim()) return "PenPal ingest rejected: source is required.";
+  if (!params.text.trim()) return "PenPal ingest rejected: text is required.";
+  if (Buffer.byteLength(params.text, "utf8") > maxIngestBytes) {
+    return `PenPal ingest rejected: text exceeds ${maxIngestBytes} bytes.`;
+  }
+  return "";
 }
 
 async function penpalIngest(

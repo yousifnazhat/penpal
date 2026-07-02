@@ -65,6 +65,31 @@ PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex -
 PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_suggest -e ./examples/pi/penpal-extension.example.ts -p "Use penpal_suggest for target demo once. Return the suggestion titles, reasons, and first command example for each. Do not invent anything."
 ```
 
-Keep the first integration read-only. `penpal-ingest-tool.example.ts` is intentionally not imported by the read-only extension. It also requires `PENPAL_ENABLE_MUTATING_TOOLS=true` and an operator confirmation before ingesting anything.
+Keep the first integration read-only by default. `penpal_ingest` is registered only when `PENPAL_ENABLE_MUTATING_TOOLS=true`; it requires an operator confirmation, a non-empty source, and bounded input before ingesting anything.
+
+## Mutating ingest smoke test
+
+Use interactive PI for `penpal_ingest`; `pi -p` cannot approve the confirmation prompt and should reject the tool call.
+
+```bash
+PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-pi-ingest-smoke PENPAL_ENABLE_MUTATING_TOOLS=true pi --provider openai-codex --model gpt-5.4-mini --no-builtin-tools --tools penpal_ingest -e ./examples/pi/penpal-extension.example.ts
+```
+
+Then ask PI:
+
+```text
+Use penpal_ingest for target demo exactly once with source "snmpwalk-smoke", service "udp/161", and text exactly:
+SNMPv2-MIB::sysName.0 = STRING: mail01.example.local
+User: daniel
+email: daniel@example.local
+/backup.zip Status: 200, Size: 9001
+Return only added count, ignored_duplicates, and evidence types. Do not call any other tool.
+```
+
+Approve only after PI shows the target, workspace, argv, source, service, and input byte count. Verify the mutation outside PI:
+
+```bash
+python3 -m penpal --workspace penpal-pi-ingest-smoke evidence demo
+```
 
 PI extension primitives used here follow the public PI extension docs: `ExtensionAPI`, `pi.registerTool`, and `typebox` schemas.
