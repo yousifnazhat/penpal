@@ -16,6 +16,8 @@ SOURCE_FETCH_SCHEMA = "penpal-source-fetch-v1"
 DEFAULT_SEEDS_PATH = Path(__file__).resolve().parents[1] / "docs" / "SOURCE_SEEDS.json"
 DEFAULT_CACHE_DIR = Path(".penpal-source-cache")
 MAX_SOURCE_BYTES = 2_000_000
+MAX_EXTRACTED_FACTS = 12
+MAX_FACT_LENGTH = 240
 
 
 @dataclass
@@ -107,13 +109,14 @@ def fetch_source_seed(
     cache_path.write_bytes(raw)
 
     text = raw.decode(_charset(content_type), errors="replace")
-    title = _extract_title(text)
+    parsed = _parse_html(text)
     facts = [
         {"type": "source_seed", "value": str(seed["name"]), "source_url": final_url},
         {"type": "source_tier", "value": str(seed["tier"]), "source_url": final_url},
     ]
-    if title:
-        facts.append({"type": "page_title", "value": title, "source_url": final_url})
+    if parsed.title:
+        facts.append({"type": "page_title", "value": parsed.title, "source_url": final_url})
+    facts.extend(_extract_candidate_facts(seed, parsed, final_url))
 
     return SourceFetchResult(
         source=seed,
@@ -150,26 +153,119 @@ def _charset(content_type: str) -> str:
     return "utf-8"
 
 
-def _extract_title(text: str) -> str:
-    parser = _TitleParser()
+def _parse_html(text: str) -> "_SourceHTMLParser":
+    parser = _SourceHTMLParser()
     parser.feed(text[:200_000])
-    return " ".join(parser.title.split())
+    parser.close()
+    parser.title = _normalize_fact(parser.title)
+    parser.headings = _unique(_normalize_fact(item) for item in parser.headings)
+    parser.code_blocks = _unique(_normalize_fact(item) for item in parser.code_blocks)
+    return parser
 
 
-class _TitleParser(HTMLParser):
+def _extract_candidate_facts(seed: dict[str, Any], parsed: "_SourceHTMLParser", source_url: str) -> list[dict[str, str]]:
+    facts: list[dict[str, str]] = []
+    extraction_types = set(seed.get("extract", []))
+    if extraction_types.intersection(
+        {
+            "workflow",
+            "tool_workflow",
+            "test_categories",
+            "vulnerability_taxonomy",
+            "terminology",
+            "data_model",
+            "defensive_context",
+            "risk_model",
+            "course_scope",
+            "reporting_expectations",
+        }
+    ):
+        for heading in parsed.headings:
+            facts.append(_candidate_fact("workflow_heading", heading, source_url))
+            if len(facts) >= MAX_EXTRACTED_FACTS:
+                return facts
+
+    if extraction_types.intersection({"command_syntax", "flags", "output_formats", "tool_inventory", "modules"}):
+        for snippet in parsed.code_blocks:
+            if _looks_like_command(snippet, seed):
+                facts.append(_candidate_fact("command_syntax", snippet, source_url))
+                if len(facts) >= MAX_EXTRACTED_FACTS:
+                    return facts
+
+    return facts
+
+
+def _candidate_fact(fact_type: str, value: str, source_url: str) -> dict[str, str]:
+    return {
+        "type": fact_type,
+        "value": value[:MAX_FACT_LENGTH],
+        "source_url": source_url,
+        "review_status": "candidate",
+    }
+
+
+def _looks_like_command(value: str, seed: dict[str, Any]) -> bool:
+    lowered = value.lower().strip()
+    command_names = {
+        "nmap",
+        "ffuf",
+        "feroxbuster",
+        "nxc",
+        "netexec",
+        "crackmapexec",
+        "impacket",
+        "python",
+        "smbclient",
+        "bloodhound",
+    }
+    source_id = str(seed.get("id", "")).lower()
+    command_names.update(part for part in source_id.replace("_", "-").split("-") if part)
+    return any(lowered == command or lowered.startswith(f"{command} ") for command in command_names)
+
+
+def _normalize_fact(value: str) -> str:
+    return " ".join(value.split())
+
+
+def _unique(values: Any) -> list[str]:
+    seen: set[str] = set()
+    results: list[str] = []
+    for value in values:
+        if value and value not in seen:
+            seen.add(value)
+            results.append(value)
+    return results
+
+
+class _SourceHTMLParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__()
-        self.in_title = False
+        self.capture_tag = ""
         self.title = ""
+        self.headings: list[str] = []
+        self.code_blocks: list[str] = []
+        self.current = ""
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag.lower() == "title":
-            self.in_title = True
+        tag = tag.lower()
+        if tag in {"title", "h1", "h2", "h3", "code", "pre"}:
+            self.capture_tag = tag
+            self.current = ""
 
     def handle_endtag(self, tag: str) -> None:
-        if tag.lower() == "title":
-            self.in_title = False
+        tag = tag.lower()
+        if tag != self.capture_tag:
+            return
+        value = _normalize_fact(self.current)
+        if tag == "title":
+            self.title = value
+        elif tag in {"h1", "h2", "h3"} and value:
+            self.headings.append(value)
+        elif tag in {"code", "pre"} and value:
+            self.code_blocks.append(value)
+        self.capture_tag = ""
+        self.current = ""
 
     def handle_data(self, data: str) -> None:
-        if self.in_title:
-            self.title += data
+        if self.capture_tag:
+            self.current += data
