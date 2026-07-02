@@ -7,6 +7,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 from .advisor import build_suggestions
+from .context import build_context
 from .ingest import extract_evidence
 from .nmap_parser import parse_nmap_xml
 from .summary import render_summary
@@ -56,6 +57,8 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                         reveal_secrets=_query_bool(self.path, "reveal_secrets"),
                     )
                     self._json({"suggestions": [suggestion.to_dict() for suggestion in suggestions]})
+                elif len(path) == 4 and path[:2] == ["api", "targets"] and path[3] == "context":
+                    self._json(build_context(workspace, path[2], reveal_secrets=_query_bool(self.path, "reveal_secrets")))
                 elif len(path) == 4 and path[:2] == ["api", "targets"] and path[3] == "summary":
                     target = workspace.require_target(path[2])
                     services = workspace.load_services(path[2])

@@ -68,8 +68,10 @@ class IngestTests(unittest.TestCase):
         snmp_path = next(suggestion for suggestion in suggestions if suggestion.id == "path_snmp_mail_remote")
         self.assertIn("snmpwalk -v2c -c public 10.10.10.5", snmp_path.command_examples)
         masked_remote = next(suggestion for suggestion in suggestions if suggestion.id == "credentials_to_remote")
+        self.assertTrue(all("Winter2024!" not in fact for fact in masked_remote.supporting_facts))
         self.assertIn("xfreerdp /v:10.10.10.5 /u:daniel /p:<known_password> /cert:ignore", masked_remote.command_examples)
         revealed_remote = next(suggestion for suggestion in revealed_suggestions if suggestion.id == "credentials_to_remote")
+        self.assertTrue(any("Winter2024!" in fact for fact in revealed_remote.supporting_facts))
         self.assertIn("xfreerdp /v:10.10.10.5 /u:daniel /p:Winter2024! /cert:ignore", revealed_remote.command_examples)
 
 

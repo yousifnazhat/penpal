@@ -5,6 +5,9 @@ from datetime import datetime, timezone
 from typing import Any
 
 
+SENSITIVE_EVIDENCE_TOKENS = ("credential", "password", "secret", "token", "key", "hash")
+
+
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
@@ -124,16 +127,22 @@ class Evidence:
     tags: list[str] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> dict[str, Any]:
+    @property
+    def sensitive(self) -> bool:
+        lowered = self.type.lower()
+        return any(token in lowered for token in SENSITIVE_EVIDENCE_TOKENS)
+
+    def to_dict(self, reveal: bool = True) -> dict[str, Any]:
+        masked = self.sensitive and not reveal
         return {
             "id": self.id,
             "type": self.type,
-            "value": self.value,
+            "value": "<sensitive>" if masked else self.value,
             "source": self.source,
             "created_at": self.created_at,
             "confidence": self.confidence,
             "service_key": self.service_key,
-            "context": self.context,
+            "context": "<sensitive>" if masked and self.context else self.context,
             "tags": list(self.tags),
             "metadata": dict(self.metadata),
         }

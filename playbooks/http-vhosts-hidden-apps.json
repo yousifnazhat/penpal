@@ -1,0 +1,49 @@
+{
+  "actions": [
+    {
+      "commands": [
+        "curl -i http://<target_host>/",
+        "ffuf -u http://<target_host>/ -H \"Host: FUZZ.<domain>\" -w <wordlist> -mc all -fs <baseline_size>",
+        "python -m penpal ingest <target_name> --file ./vhosts.txt --source ffuf --service tcp/80"
+      ],
+      "description": "Fingerprint the web service and run virtual-host discovery only when the domain is in scope.",
+      "id": "discover-web-vhosts",
+      "risk": "normal"
+    },
+    {
+      "commands": [
+        "feroxbuster -u http://<target_host>/ -w <wordlist> -o ./ferox-http.txt",
+        "python -m penpal ingest <target_name> --file ./ferox-http.txt --source feroxbuster --service tcp/80"
+      ],
+      "description": "Feed discovered web paths back into PenPal so hidden panels, backups, and routes become evidence.",
+      "id": "discover-web-paths",
+      "risk": "normal"
+    }
+  ],
+  "description": "Use exposed HTTP services to discover virtual hosts and hidden applications without wandering through low-signal web rabbit holes.",
+  "id": "http-vhosts-hidden-apps",
+  "safety": {
+    "authorized_use_only": true,
+    "requires_operator_approval": true
+  },
+  "schema": "penpal-playbook-v1",
+  "signals": [
+    {
+      "ports": [
+        80,
+        443,
+        8000,
+        8008,
+        8080,
+        8443
+      ],
+      "type": "service_any"
+    }
+  ],
+  "tags": [
+    "http",
+    "vhosts",
+    "content-discovery"
+  ],
+  "title": "HTTP to virtual hosts and hidden apps"
+}

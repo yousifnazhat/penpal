@@ -26,6 +26,8 @@ penpal/
   nmap_parser.py      Nmap XML parser
   ingest.py           Raw output to candidate evidence extraction
   advisor.py          Deterministic suggestions and command syntax
+  playbooks.py        Community playbook validation and loading
+  context.py          PI/frontend context snapshot
   recommendations.py  Simple service-specific checklist guidance
   summary.py          Markdown notes generation
 ```
@@ -80,6 +82,10 @@ evidence + services + parameters -> suggestions -> exact syntax -> more evidence
 ```
 
 The source of truth should be persisted data, not terminal output.
+
+## Harness Boundary
+
+PenPal should stay harness-neutral at the core. PI is the first v1 cockpit, MCP is the portability layer, Hermes is a later long-running copilot option, and OpenClaw is a later channel gateway. Harnesses consume PenPal facts; they do not create facts without feeding data back through PenPal.
 
 ## Data Objects
 

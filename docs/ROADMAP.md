@@ -25,6 +25,26 @@ The goal is a smart methodology engine: ports become services, services produce 
 - Let course notes become playbooks over time.
 - Make every feature useful from the CLI before building the frontend.
 
+## Product Architecture Roadmap
+
+Build in this order:
+
+```text
+PenPal core -> context contract -> PI cockpit -> playbook ecosystem -> MCP portability -> later harnesses
+```
+
+1. **PenPal core**: keep services, evidence, parameters, suggestions, masking, and playbook matching deterministic.
+2. **Context contract**: stabilize `penpal-context-v1` so agents and frontends consume the same facts.
+3. **PI cockpit**: make PI the first operator harness with read-only tools first and operator-approved ingest later.
+4. **Evaluation corpus**: add sample target contexts, expected top suggestions, and safety assertions.
+5. **Community playbooks**: grow the schema, validator, examples, template, and contribution workflow.
+6. **MCP portability**: expose the same safe read-only tools to other agent clients.
+7. **Public v1**: ship docs, CI, security policy, release checklist, and a safe demo flow.
+8. **Post-v1 automation**: add scope model, audit log, review workflow, and approved mutating actions.
+9. **Later harnesses**: consider Hermes for long-running copilot workflows and OpenClaw for chat/channel gateways only after schemas, evaluations, and approval gates are stable.
+
+Do not let any harness become the source of truth. Harnesses read PenPal facts, explain them, and submit new data back through PenPal.
+
 ## Enterprise Direction
 
 This tool should grow beyond exam prep into an enterprise-ready enumeration and assessment assistant.

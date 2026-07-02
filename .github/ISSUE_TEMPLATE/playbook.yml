@@ -1,0 +1,46 @@
+name: Community playbook
+description: Propose a deterministic PenPal playbook.
+title: "Playbook: "
+labels: ["playbook", "community"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Playbooks should describe authorized, evidence-backed enumeration paths with visible commands and operator approval.
+  - type: input
+    id: playbook-id
+    attributes:
+      label: Playbook id
+      description: Use lowercase words separated by hyphens.
+      placeholder: smb-shares-configs-credentials
+    validations:
+      required: true
+  - type: textarea
+    id: path
+    attributes:
+      label: Enumeration path
+      description: What signals should trigger this path, and why is it high value?
+      placeholder: "Signals: tcp/445 SMB. Reason: readable shares often expose configs, scripts, and credential-looking strings."
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Visible commands
+      description: List exact commands with placeholders like <target_host>, <known_user>, or <wordlist>.
+      placeholder: |
+        smbclient -L //<target_host> -N
+        python -m penpal ingest <target_name> --file ./smb-review.txt --source smb-review --service tcp/445
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: This playbook is for authorized systems only.
+          required: true
+        - label: Risky or credentialed actions require operator approval.
+          required: true
+        - label: This does not add C2 tasking, exploit execution, or autonomous credential use.
+          required: true

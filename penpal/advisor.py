@@ -23,6 +23,7 @@ class Suggestion:
     supporting_facts: list[str]
     next_actions: list[str]
     command_examples: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -35,6 +36,7 @@ class Suggestion:
             "supporting_facts": list(self.supporting_facts),
             "next_actions": list(self.next_actions),
             "command_examples": list(self.command_examples),
+            "metadata": dict(self.metadata),
         }
 
 
@@ -45,6 +47,7 @@ def build_suggestions(
     target_name: str = "<target_name>",
     parameters: dict[str, Parameter] | None = None,
     reveal_secrets: bool = False,
+    playbooks: list[dict[str, Any]] | None = None,
 ) -> list[Suggestion]:
     parameters = parameters or {}
     target_host = _parameter_value(parameters, "target_host", target_host, reveal_secrets)
@@ -99,7 +102,8 @@ def build_suggestions(
                 confidence="medium",
                 value="medium",
                 risk="normal",
-                supporting_facts=[_evidence_fact(item) for item in usernames[:6]] + _facts_for_ports(services, MAIL_PORTS),
+                supporting_facts=[_evidence_fact(item, reveal_secrets) for item in usernames[:6]]
+                + _facts_for_ports(services, MAIL_PORTS),
                 next_actions=[
                     "Review username source context before using them.",
                     "Build a usernames list in loot/ or evidence exports.",
@@ -122,7 +126,7 @@ def build_suggestions(
                 confidence="medium",
                 value="high",
                 risk="normal",
-                supporting_facts=[_evidence_fact(item) for item in credential_candidates[:5]]
+                supporting_facts=[_evidence_fact(item, reveal_secrets) for item in credential_candidates[:5]]
                 + _facts_for_ports(services, REMOTE_ACCESS_PORTS),
                 next_actions=[
                     "Manually validate whether the candidate is a real credential.",
@@ -143,7 +147,8 @@ def build_suggestions(
                 confidence="medium",
                 value="medium",
                 risk="normal",
-                supporting_facts=[_evidence_fact(item) for item in hostnames[:6]] + _facts_for_ports(services, WEB_PORTS),
+                supporting_facts=[_evidence_fact(item, reveal_secrets) for item in hostnames[:6]]
+                + _facts_for_ports(services, WEB_PORTS),
                 next_actions=[
                     "Add discovered names to your local hosts mapping when appropriate.",
                     "Run vhost discovery using the known domain.",
@@ -166,7 +171,7 @@ def build_suggestions(
                 confidence="medium",
                 value="medium",
                 risk="passive",
-                supporting_facts=[_evidence_fact(item) for item in web_paths[:8]],
+                supporting_facts=[_evidence_fact(item, reveal_secrets) for item in web_paths[:8]],
                 next_actions=[
                     "Open interesting paths manually and capture notes or screenshots.",
                     "Prioritize admin, backup, upload, config, and version-revealing paths.",
@@ -188,7 +193,7 @@ def build_suggestions(
                 confidence="medium",
                 value="high",
                 risk="passive",
-                supporting_facts=[_evidence_fact(item) for item in interesting_files[:8]],
+                supporting_facts=[_evidence_fact(item, reveal_secrets) for item in interesting_files[:8]],
                 next_actions=[
                     "Move relevant downloaded files into loot/.",
                     "Extract usernames, hostnames, service names, and credential-looking strings.",
@@ -202,7 +207,111 @@ def build_suggestions(
             )
         )
 
-    return _render_suggestion_parameters(dedupe_suggestions(suggestions), parameters, reveal_secrets)
+    suggestions.extend(_playbook_suggestions(playbooks or [], services, evidence, reveal_secrets))
+    defaults = {"target_host": target_host, "target_name": target_name}
+    return _render_suggestion_parameters(dedupe_suggestions(suggestions), parameters, reveal_secrets, defaults)
+
+
+def _playbook_suggestions(
+    playbooks: list[dict[str, Any]],
+    services: list[Service],
+    evidence: list[Evidence],
+    reveal_secrets: bool,
+) -> list[Suggestion]:
+    suggestions: list[Suggestion] = []
+    for playbook in playbooks:
+        matched_signals = _matched_playbook_signals(playbook, services, evidence, reveal_secrets)
+        if matched_signals is None:
+            continue
+        supporting_facts = [fact for match in matched_signals for fact in match["facts"]]
+        actions = playbook.get("actions", [])
+        suggestions.append(
+            Suggestion(
+                id=f"playbook_{_suggestion_id(str(playbook['id']))}",
+                title=str(playbook["title"]),
+                reason=str(playbook["description"]),
+                confidence="medium",
+                value="high",
+                risk=_highest_action_risk(actions),
+                supporting_facts=supporting_facts,
+                next_actions=[str(action["description"]) for action in actions],
+                command_examples=[str(command) for action in actions for command in action.get("commands", [])],
+                metadata={
+                    "source": "playbook",
+                    "playbook_id": playbook["id"],
+                    "playbook_schema": playbook["schema"],
+                    "playbook_tags": list(playbook.get("tags", [])),
+                    "matched_signals": matched_signals,
+                },
+            )
+        )
+    return suggestions
+
+
+def _matched_playbook_signals(
+    playbook: dict[str, Any],
+    services: list[Service],
+    evidence: list[Evidence],
+    reveal_secrets: bool,
+) -> list[dict[str, Any]] | None:
+    matches: list[dict[str, Any]] = []
+    for index, signal in enumerate(playbook.get("signals", [])):
+        matched = _match_playbook_signal(signal, services, evidence, reveal_secrets)
+        if not matched:
+            return None
+        matches.append(
+            {
+                "index": index,
+                "type": signal.get("type", ""),
+                "criteria": dict(signal),
+                "facts": matched,
+            }
+        )
+    return matches
+
+
+def _match_playbook_signal(
+    signal: dict[str, Any],
+    services: list[Service],
+    evidence: list[Evidence],
+    reveal_secrets: bool,
+) -> list[str]:
+    signal_type = signal.get("type")
+    if signal_type in {"service", "service_any"}:
+        return _match_service_signal(signal, services)
+    if signal_type == "evidence":
+        evidence_type = signal.get("evidence_type")
+        return [_evidence_fact(item, reveal_secrets) for item in evidence if item.type == evidence_type][:8]
+    return []
+
+
+def _match_service_signal(signal: dict[str, Any], services: list[Service]) -> list[str]:
+    ports = {signal["port"]} if "port" in signal else set(signal.get("ports", []))
+    names = {str(signal["name"]).lower()} if "name" in signal else {str(name).lower() for name in signal.get("names", [])}
+    protocol = str(signal.get("protocol", "")).lower()
+    facts: list[str] = []
+    for service in services:
+        if service.state != "open":
+            continue
+        if protocol and service.protocol.lower() != protocol:
+            continue
+        if ports and service.port not in ports:
+            continue
+        if names and service.name.lower() not in names:
+            continue
+        facts.append(f"{service.protocol}/{service.port} {service.name or 'unknown'}")
+    return facts[:8]
+
+
+RISK_RANK = {"passive": 0, "normal": 1, "aggressive": 2, "approval_required": 3}
+
+
+def _highest_action_risk(actions: list[dict[str, Any]]) -> str:
+    return max((str(action["risk"]) for action in actions), key=lambda risk: RISK_RANK.get(risk, 0), default="normal")
+
+
+def _suggestion_id(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", value).strip("._-") or "playbook"
 
 
 def _has_web(services: list[Service]) -> bool:
@@ -288,10 +397,11 @@ def _facts_for_ports(services: list[Service], ports: set[int]) -> list[str]:
     return facts
 
 
-def _evidence_fact(item: Evidence) -> str:
+def _evidence_fact(item: Evidence, reveal_secrets: bool = False) -> str:
+    value = item.value if reveal_secrets or not item.sensitive else "<sensitive>"
     if item.service_key:
-        return f"{item.type}: {item.value} ({item.service_key})"
-    return f"{item.type}: {item.value}"
+        return f"{item.type}: {value} ({item.service_key})"
+    return f"{item.type}: {value}"
 
 
 def dedupe_suggestions(suggestions: list[Suggestion]) -> list[Suggestion]:
@@ -318,19 +428,28 @@ def _render_suggestion_parameters(
     suggestions: list[Suggestion],
     parameters: dict[str, Parameter],
     reveal_secrets: bool,
+    defaults: dict[str, str] | None = None,
 ) -> list[Suggestion]:
+    defaults = defaults or {}
     for suggestion in suggestions:
         suggestion.command_examples = [
-            _render_command(command, parameters, reveal_secrets)
+            _render_command(command, parameters, reveal_secrets, defaults)
             for command in suggestion.command_examples
         ]
     return suggestions
 
 
-def _render_command(command: str, parameters: dict[str, Parameter], reveal_secrets: bool) -> str:
+def _render_command(
+    command: str,
+    parameters: dict[str, Parameter],
+    reveal_secrets: bool,
+    defaults: dict[str, str] | None = None,
+) -> str:
+    defaults = defaults or {}
+
     def replace(match: re.Match[str]) -> str:
         name = match.group(1)
-        value = _parameter_value(parameters, name, match.group(0), reveal_secrets)
+        value = _parameter_value(parameters, name, defaults.get(name, match.group(0)), reveal_secrets)
         return value
 
     return PLACEHOLDER_RE.sub(replace, command)

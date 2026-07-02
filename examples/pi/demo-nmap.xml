@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<nmaprun>
+  <host>
+    <status state="up"/>
+    <address addr="10.10.10.5" addrtype="ipv4"/>
+    <ports>
+      <port protocol="udp" portid="161"><state state="open"/><service name="snmp"/></port>
+      <port protocol="tcp" portid="143"><state state="open"/><service name="imap"/></port>
+      <port protocol="tcp" portid="3389"><state state="open"/><service name="ms-wbt-server"/></port>
+    </ports>
+  </host>
+</nmaprun>
