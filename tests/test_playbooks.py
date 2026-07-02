@@ -2,6 +2,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 import json
+import re
 
 from penpal.advisor import build_suggestions
 from penpal.models import Service
@@ -164,6 +165,15 @@ class CommunityPlaybookTests(unittest.TestCase):
 
         self.assertGreaterEqual(report.valid_playbooks, 4)
         self.assertEqual(report.errors, [])
+        self.assertNotIn("TEMPLATE.md", {playbook.path for playbook in report.playbooks})
+
+    def test_template_markdown_contains_valid_playbook_json(self) -> None:
+        path = Path(__file__).resolve().parents[1] / "playbooks" / "TEMPLATE.md"
+        match = re.search(r"```json\s*(?P<body>[\s\S]*?)\s*```", path.read_text(encoding="utf-8"))
+
+        self.assertIsNotNone(match)
+        playbook = json.loads(match.group("body"))
+        self.assertEqual(validate_playbook(playbook), "")
 
     def test_load_playbooks_rejects_invalid_playbook(self) -> None:
         with TemporaryDirectory() as temp_dir:
