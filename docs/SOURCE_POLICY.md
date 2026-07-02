@@ -80,6 +80,10 @@ Treat notes and professional documentation as source datasets, not copied corpor
 - Community references: use for ideas and checklist expansion, then verify syntax or deterministic behavior against official docs or manual testing.
 - Playbooks: cite source titles or URLs with optional `source_tier`, `sources`, and `review_status` fields.
 
+The crawl seed manifest lives in `SOURCE_SEEDS.json`. Raw crawl caches should stay outside git in `.penpal-source-cache/`; committed data should be small, cited, reviewed extractions.
+
+Free-to-read documentation is not the same as permission to republish full text. PenPal should keep source URLs and extracted facts, not mirrored documentation pages.
+
 ## Rule Requirements
 
 Every PenPal rule or playbook entry should eventually include:

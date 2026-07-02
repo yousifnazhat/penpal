@@ -18,6 +18,7 @@ dist/
 
 penpal-workspace/
 penpal-*-smoke/
+.penpal-source-cache/
 *.log
 
 .DS_Store
