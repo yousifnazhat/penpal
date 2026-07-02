@@ -75,6 +75,30 @@ class ContractFixtureTests(unittest.TestCase):
                 "playbook_snmp-mail-remote",
             ],
         )
+        playbook = next(item for item in context["suggestions"] if item["id"] == "playbook_snmp-mail-remote")
+        self.assertEqual(
+            playbook["metadata"]["matched_signals"],
+            [
+                {
+                    "index": 0,
+                    "type": "service",
+                    "criteria": {"type": "service", "protocol": "udp", "port": 161},
+                    "facts": ["udp/161 snmp"],
+                },
+                {
+                    "index": 1,
+                    "type": "service_any",
+                    "criteria": {"type": "service_any", "ports": [110, 143, 993, 995]},
+                    "facts": ["tcp/143 imap"],
+                },
+                {
+                    "index": 2,
+                    "type": "service_any",
+                    "criteria": {"type": "service_any", "ports": [22, 445, 3389, 5985, 5986]},
+                    "facts": ["tcp/3389 ms-wbt-server"],
+                },
+            ],
+        )
 
     def test_masked_context_contract_never_leaks_sensitive_values(self) -> None:
         secret = "Winter2024!"
