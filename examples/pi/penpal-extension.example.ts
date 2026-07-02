@@ -37,6 +37,18 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.registerTool({
+    name: "penpal_evidence",
+    label: "PenPal evidence",
+    description: "Read PenPal's extracted evidence for a target.",
+    parameters: Type.Object({
+      target: Type.String({ description: "PenPal target name" }),
+    }),
+    async execute(_toolCallId, params, signal) {
+      return textResult(await penpal(["evidence", params.target, "--json"], signal));
+    },
+  });
+
+  pi.registerTool({
     name: "penpal_playbooks_validate",
     label: "Validate PenPal playbooks",
     description: "Validate the repository playbooks directory.",
