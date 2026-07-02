@@ -1,15 +1,70 @@
 from contextlib import redirect_stdout
 from io import StringIO
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
 from penpal.cli import main
+from penpal.ingest import extract_evidence
 from penpal.models import Service
+from penpal.nmap_parser import parse_nmap_xml
 from penpal.workspace import Workspace
 
 
+RAW_SNMP_OUTPUT = """SNMPv2-MIB::sysName.0 = STRING: mail01.example.local
+User: daniel
+email: daniel@example.local
+/backup.zip Status: 200, Size: 9001
+"""
+
+
 class CliTests(unittest.TestCase):
+    def test_json_commands_preserve_contract_shapes(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(__file__).resolve().parents[1]
+            playbooks = root / "playbooks"
+            workspace = Workspace(temp_dir)
+            target = workspace.create_target("10.10.10.5", name="demo")
+            workspace.merge_services(target.name, parse_nmap_xml(root / "examples" / "pi" / "demo-nmap.xml"))
+            workspace.append_evidence(
+                target.name,
+                extract_evidence(RAW_SNMP_OUTPUT, source="snmpwalk-smoke", service_key="udp/161").evidence,
+            )
+
+            context = run_json(["--workspace", temp_dir, "context", target.name, "--playbooks", str(playbooks)])
+            evidence = run_json(["--workspace", temp_dir, "evidence", target.name, "--json"])
+            suggestions = run_json(
+                ["--workspace", temp_dir, "suggest", target.name, "--playbooks", str(playbooks), "--json"]
+            )
+
+        self.assertEqual(context["schema"], "penpal-context-v1")
+        self.assertEqual(
+            [(item["protocol"], item["port"], item["name"]) for item in context["services"]],
+            [("tcp", 143, "imap"), ("tcp", 3389, "ms-wbt-server"), ("udp", 161, "snmp")],
+        )
+        self.assertEqual(
+            [(item["type"], item["value"]) for item in evidence["evidence"]],
+            [
+                ("domain", "example.local"),
+                ("email", "daniel@example.local"),
+                ("hostname", "mail01.example.local"),
+                ("interesting_file", "/backup.zip"),
+                ("username", "daniel"),
+                ("web_path", "/backup.zip"),
+            ],
+        )
+        self.assertEqual(
+            [item["id"] for item in suggestions["suggestions"]],
+            [
+                "path_snmp_mail_remote",
+                "usernames_to_mail",
+                "review_web_paths",
+                "review_interesting_files",
+                "playbook_snmp-mail-remote",
+            ],
+        )
+
     def test_suggest_explains_playbook_matches(self) -> None:
         with TemporaryDirectory() as temp_dir:
             workspace = Workspace(temp_dir)
@@ -33,6 +88,15 @@ class CliTests(unittest.TestCase):
         self.assertIn("Why this fired:", output)
         self.assertIn("- service: udp/161 snmp", output)
         self.assertIn("- service_any: tcp/143 imap", output)
+
+
+def run_json(args: list[str]) -> dict:
+    stdout = StringIO()
+    with redirect_stdout(stdout):
+        code = main(args)
+    if code != 0:
+        raise AssertionError(f"expected exit 0, got {code}: {stdout.getvalue()}")
+    return json.loads(stdout.getvalue())
 
 
 if __name__ == "__main__":
