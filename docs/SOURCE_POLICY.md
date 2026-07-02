@@ -91,6 +91,8 @@ python -m penpal sources list
 python -m penpal sources fetch nmap --url https://nmap.org/docs.html --json
 ```
 
+Fetched pages may emit `candidate` command or workflow facts; promote them into playbooks only after review against the cited source.
+
 ## Rule Requirements
 
 Every PenPal rule or playbook entry should eventually include:

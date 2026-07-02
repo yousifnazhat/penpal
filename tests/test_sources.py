@@ -18,7 +18,7 @@ SEEDS = {
             "areas": ["network-scanning"],
             "seed_urls": ["https://nmap.org/docs.html"],
             "allowed_domains": ["nmap.org"],
-            "extract": ["command_syntax"],
+            "extract": ["command_syntax", "workflow"],
         }
     ],
 }
@@ -43,7 +43,16 @@ class SourceTests(unittest.TestCase):
                 find_source_seed("missing", path)
 
     def test_fetch_source_seed_caches_raw_page_and_extracts_tiny_facts(self) -> None:
-        html = b"<html><head><title>Nmap Docs</title></head><body>not committed</body></html>"
+        html = b"""
+        <html>
+          <head><title>Nmap Docs</title></head>
+          <body>
+            <h1>Nmap Workflow</h1>
+            <code>nmap -sV &lt;target&gt;</code>
+            <code>echo not a command fact</code>
+          </body>
+        </html>
+        """
         with TemporaryDirectory() as temp_dir:
             seeds_path = _write_seeds(temp_dir)
             cache_dir = Path(temp_dir) / "cache"
@@ -60,6 +69,25 @@ class SourceTests(unittest.TestCase):
         self.assertTrue(cache_path.name.endswith(".html"))
         self.assertEqual(cached, html)
         self.assertIn({"type": "page_title", "value": "Nmap Docs", "source_url": "https://nmap.org/docs.html"}, data["facts"])
+        self.assertIn(
+            {
+                "type": "workflow_heading",
+                "value": "Nmap Workflow",
+                "source_url": "https://nmap.org/docs.html",
+                "review_status": "candidate",
+            },
+            data["facts"],
+        )
+        self.assertIn(
+            {
+                "type": "command_syntax",
+                "value": "nmap -sV <target>",
+                "source_url": "https://nmap.org/docs.html",
+                "review_status": "candidate",
+            },
+            data["facts"],
+        )
+        self.assertNotIn("echo not a command fact", {fact["value"] for fact in data["facts"]})
 
     def test_fetch_source_seed_rejects_unlisted_url(self) -> None:
         with TemporaryDirectory() as temp_dir:
