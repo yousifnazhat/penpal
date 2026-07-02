@@ -63,6 +63,8 @@ Do not commit provider tokens or API keys. PI stores OAuth/API-key auth outside 
 
 Keep mutating tools disabled until operator approval is implemented and tested.
 
+See `examples/pi/README.md` for forced-tool smoke tests that verify PI is using the PenPal extension.
+
 ## Not needed for v1
 
 - C2 accounts
