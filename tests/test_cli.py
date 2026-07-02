@@ -113,6 +113,30 @@ class CliTests(unittest.TestCase):
 
         self.assertEqual(data["sources"][0]["id"], "nmap")
 
+    def test_sources_reviewed_json(self) -> None:
+        facts = {
+            "schema": "penpal-reviewed-source-facts-v1",
+            "facts": [
+                {
+                    "id": "nmap-safe-fact",
+                    "source_id": "nmap",
+                    "source_tier": "official",
+                    "source_url": "https://nmap.org/book/man.html",
+                    "fact_type": "workflow",
+                    "summary": "Reviewed facts are small cited units that can later feed evals or playbooks.",
+                    "review_status": "reviewed",
+                    "safety": "evidence_only",
+                }
+            ],
+        }
+        with TemporaryDirectory() as temp_dir:
+            facts_path = Path(temp_dir) / "SOURCE_FACTS.json"
+            facts_path.write_text(json.dumps(facts), encoding="utf-8")
+
+            data = run_json(["--workspace", temp_dir, "sources", "reviewed", "--facts", str(facts_path), "--json"])
+
+        self.assertEqual(data["facts"][0]["id"], "nmap-safe-fact")
+
 
 def run_json(args: list[str]) -> dict:
     stdout = StringIO()
