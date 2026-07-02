@@ -38,6 +38,12 @@ Supported action risks:
 - `aggressive`
 - `approval_required`
 
+Optional provenance fields:
+
+- `source_tier`: `official`, `methodology`, `community`, or `internal`
+- `sources`: source titles, URLs, or internal note labels that informed the playbook
+- `review_status`: usually `draft` until syntax and reasoning are manually reviewed
+
 ## Fast validation
 
 Run these before opening a PR:

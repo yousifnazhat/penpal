@@ -71,6 +71,15 @@ Examples:
 
 Community references are useful, but they are not gospel. Verify syntax against official docs and mark community-derived logic clearly.
 
+## Source Datasets
+
+Treat notes and professional documentation as source datasets, not copied corpora.
+
+- Personal notes: scan only a user-provided vault path with `python -m penpal notes <vault>`. PenPal should extract explicit `penpal:*` blocks and source labels, not bulk-copy private notes into the repo.
+- Professional documentation: record the source in `SOURCE_REGISTRY.md`, then extract small facts such as command syntax, prerequisites, output formats, and expected evidence.
+- Community references: use for ideas and checklist expansion, then verify syntax or deterministic behavior against official docs or manual testing.
+- Playbooks: cite source titles or URLs with optional `source_tier`, `sources`, and `review_status` fields.
+
 ## Rule Requirements
 
 Every PenPal rule or playbook entry should eventually include:
@@ -130,4 +139,3 @@ When adding a source:
 - Community references: verify before converting to deterministic rules.
 - Training notes: keep source labels but avoid copying copyrighted course text.
 - Enterprise claims: prefer vendor documentation, standards, and defensible evidence.
-

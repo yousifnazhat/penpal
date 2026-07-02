@@ -12,6 +12,19 @@ This file is Markdown so PenPal will not load it as a real playbook. Copy the JS
     "service-name",
     "enumeration"
   ],
+  "source_tier": "methodology",
+  "sources": [
+    {
+      "title": "Source title",
+      "type": "official",
+      "url": "https://example.com"
+    },
+    {
+      "title": "User note title",
+      "type": "internal_note"
+    }
+  ],
+  "review_status": "draft",
   "signals": [
     {
       "type": "service",
