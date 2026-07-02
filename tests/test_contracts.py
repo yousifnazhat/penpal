@@ -1,9 +1,11 @@
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
 from penpal.context import build_context
 from penpal.ingest import extract_evidence
+from penpal.models import Service
 from penpal.nmap_parser import parse_nmap_xml
 from penpal.workspace import Workspace
 
@@ -72,6 +74,35 @@ class ContractFixtureTests(unittest.TestCase):
                 "review_interesting_files",
                 "playbook_snmp-mail-remote",
             ],
+        )
+
+    def test_masked_context_contract_never_leaks_sensitive_values(self) -> None:
+        secret = "Winter2024!"
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            target = workspace.create_target("10.10.10.5", name="demo")
+            workspace.merge_services(target.name, [Service(port=3389, protocol="tcp", name="ms-wbt-server")])
+            workspace.append_evidence(
+                target.name,
+                extract_evidence(f"User: daniel\npassword={secret}\n", source="operator-note").evidence,
+            )
+            workspace.set_parameter(target.name, "known_user", "daniel")
+            workspace.set_parameter(target.name, "known_password", secret, sensitive=True)
+
+            context = build_context(workspace, target.name)
+
+        body = json.dumps(context)
+        credential = next(item for item in context["evidence"] if item["type"] == "credential_candidate")
+        password_param = next(item for item in context["parameters"] if item["name"] == "known_password")
+        remote = next(item for item in context["suggestions"] if item["id"] == "credentials_to_remote")
+
+        self.assertNotIn(secret, body)
+        self.assertEqual(credential["value"], "<sensitive>")
+        self.assertEqual(credential["context"], "<sensitive>")
+        self.assertEqual(password_param["value"], "<sensitive>")
+        self.assertIn(
+            "xfreerdp /v:10.10.10.5 /u:daniel /p:<known_password> /cert:ignore",
+            remote["command_examples"],
         )
 
 
