@@ -2,7 +2,7 @@
 
 Playbooks are small JSON files that turn repeatable red-team reasoning into deterministic PenPal suggestions.
 
-Start from `TEMPLATE.md`, not by editing an existing playbook in place.
+Start from `TEMPLATE.md`, not by editing an existing playbook in place. The template is Markdown on purpose: PenPal ignores it during normal playbook loading, while contributors can copy the fenced JSON into `playbooks/<your-playbook-id>.json`.
 
 Good playbooks:
 

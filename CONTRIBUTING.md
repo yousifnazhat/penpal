@@ -11,7 +11,7 @@ PenPal is an authorized enumeration assistant. Contributions should make evidenc
 
 ## Community playbooks
 
-Playbooks are JSON files using `schema: "penpal-playbook-v1"`. See `playbooks/README.md` for authoring guidance and the supported signal/action fields.
+Playbooks are JSON files using `schema: "penpal-playbook-v1"`. Copy the fenced JSON from `playbooks/TEMPLATE.md` into a new `playbooks/<your-playbook-id>.json`, then edit the fields. See `playbooks/README.md` for authoring guidance and the supported signal/action fields.
 
 Required fields:
 

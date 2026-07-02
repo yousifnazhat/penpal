@@ -17,6 +17,7 @@ Use this before cutting the first public contributor-ready PenPal release.
 - [ ] CLI JSON outputs for context, evidence, and suggestions are covered by a contract fixture.
 - [ ] PI smoke matrix covers every shipped PI tool.
 - [ ] `docs/CONTRACTS.md` reflects the shipped harness contracts.
+- [ ] Playbook contributor template is valid but not loaded as a shipped playbook.
 
 ## Manual smoke test
 
