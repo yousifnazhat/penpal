@@ -9,6 +9,15 @@ Status meanings:
 - `legacy`: useful for context, but not primary for current syntax.
 - `community`: valuable, but should be cross-checked before deterministic use.
 
+## Dataset Intake Backlog
+
+| Dataset | Location | Status | Safe intake rule |
+| --- | --- | --- | --- |
+| User notes vault | user-provided local path | needs_review | Run `python -m penpal notes <vault>` and extract explicit PenPal blocks only |
+| Official tool documentation | sources marked official/canonical below | verified/needs_review | Extract command syntax, flags, output formats, and expected evidence |
+| Professional methodology docs | sources marked training/methodology below | needs_review | Extract workflow order and reasoning, not copyrighted course text |
+| Community idea references | sources marked community below | community | Use for idea generation, then verify before deterministic rules |
+
 ## Official And Canonical Sources
 
 | Area | Source | URL | Status | Use |
@@ -55,4 +64,3 @@ source -> extracted checks -> command templates -> evidence parser -> path rule 
 ```
 
 Rules derived from community references should stay `draft` until verified against official docs or manual testing.
-
