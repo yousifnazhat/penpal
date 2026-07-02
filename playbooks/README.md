@@ -49,3 +49,5 @@ python -m unittest discover -v
 ```
 
 If a playbook validates and produces a useful, evidence-backed suggestion, it is probably shaped correctly.
+
+When validation fails, fix the first reported file and field, then rerun the command.

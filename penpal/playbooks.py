@@ -158,10 +158,10 @@ def scan_playbooks(path: str | Path) -> PlaybookScanReport:
         try:
             data = json.loads(playbook_path.read_text(encoding="utf-8-sig"))
         except json.JSONDecodeError as exc:
-            report.playbooks.append(PlaybookFile(path=relative_path, error=f"invalid JSON: {exc.msg}"))
+            report.playbooks.append(PlaybookFile(path=relative_path, error=_authoring_error(f"invalid JSON: {exc.msg}")))
             continue
 
-        error = validate_playbook(data)
+        error = _authoring_error(validate_playbook(data))
         report.playbooks.append(PlaybookFile(path=relative_path, data=data, error=error))
     return report
 
@@ -396,3 +396,9 @@ def _dict_list(value: Any) -> bool:
 
 def _valid_port(value: Any) -> bool:
     return isinstance(value, int) and 1 <= value <= 65535
+
+
+def _authoring_error(error: str) -> str:
+    if not error:
+        return ""
+    return f"{error}; see playbooks/README.md"

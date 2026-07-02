@@ -159,6 +159,16 @@ class CommunityPlaybookTests(unittest.TestCase):
         self.assertEqual(report.valid_playbooks, 1)
         self.assertEqual(report.errors, [])
 
+    def test_scan_playbook_errors_point_to_authoring_docs(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "bad.json").write_text(json.dumps({"schema": "wrong"}), encoding="utf-8")
+
+            report = scan_playbooks(root)
+
+        self.assertIn("expected schema", report.errors[0].error)
+        self.assertIn("see playbooks/README.md", report.errors[0].error)
+
     def test_shipped_playbooks_validate(self) -> None:
         root = Path(__file__).resolve().parents[1] / "playbooks"
         report = scan_playbooks(root)
