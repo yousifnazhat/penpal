@@ -50,7 +50,7 @@ Status snapshot, last updated 2026-07-02:
 | PenPal core | Stable foundation, ongoing hardening | CLI/API, workspace storage, evidence ingest, masking, suggestions, and playbook matching are covered by tests | Keep changes deterministic and evidence-backed |
 | Context contract | Active hardening | Contract fixtures protect context, evidence, service, suggestion, masking, matched-signal, and CLI JSON shapes | Add new fixture cases only when a real contract risk appears |
 | PI cockpit | Functional v1 foundation | PI smoke tests cover read-only tools, and `penpal_ingest` is disabled by default with operator approval | Improve docs/examples before adding more PI surface area |
-| Evaluation corpus | Active now | Demo fixtures assert expected IDs, types, masking, suggestion metadata, and reviewed source facts | Add sample targets with expected top suggestions and safety assertions |
+| Evaluation corpus | Active now | Demo fixtures and source-backed eval cases assert expected IDs, types, masking, suggestion order, reviewed source facts, and safety assertions | Add the next service-chain eval only after this one stays stable |
 | Community playbooks | Active now | Validator, examples, template, docs, source facts, and tests prove reviewed material stays cited before promotion | Improve contributor authoring errors and review guidance |
 | MCP portability | Queued | `docs/MCP_ADAPTER.md` defines the safe read-only plan | Build only after contracts/evals are stable enough to preserve |
 | Public v1 | Queued | `docs/V1_RELEASE_CHECKLIST.md` tracks ship/no-ship gates | Work down the checklist after contributor flow is solid |
