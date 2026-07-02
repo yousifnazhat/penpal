@@ -26,6 +26,8 @@ Before a mutating tool runs, PI should show:
 
 The operator should approve the exact operation, not a vague category like "continue enumeration".
 
+Use an interactive PI session for mutating tools. Non-interactive `pi -p` cannot approve `ctx.ui.confirm`; treat a rejected confirmation as no mutation.
+
 ## Safe first mutating tool
 
 The first candidate is `penpal_ingest`, because it only adds operator-provided output to evidence.

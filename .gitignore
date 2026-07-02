@@ -17,6 +17,7 @@ dist/
 *.egg-info/
 
 penpal-workspace/
+penpal-*-smoke/
 *.log
 
 .DS_Store
