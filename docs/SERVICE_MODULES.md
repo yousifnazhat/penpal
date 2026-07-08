@@ -26,15 +26,28 @@ Each planned command includes:
 
 ## Usage
 
-Until this is wired into the main CLI, use the standalone helper:
+List available modules:
+
+```bash
+penpal modules list
+penpal modules list --json
+```
+
+Plan exact syntax for a target and module:
+
+```bash
+penpal modules plan nibbles snmp
+penpal modules plan nibbles web --json
+penpal modules plan nibbles smb --reveal-secrets
+```
+
+The planner loads the target, services, and parameters from the workspace, then prints source-backed commands. Sensitive parameters are masked by default. Use `--reveal-secrets` only when you intentionally want runnable commands with secret values rendered.
+
+A standalone helper remains available while the backend is still evolving:
 
 ```bash
 python -m penpal.module_cli nibbles snmp
-python -m penpal.module_cli nibbles web --json
-python -m penpal.module_cli nibbles smb --reveal-secrets
 ```
-
-The helper loads the target, services, and parameters from the workspace, then prints the planned commands. Sensitive parameters are masked by default. Use `--reveal-secrets` only when you intentionally want runnable commands with secret values rendered.
 
 ## Source Policy
 
@@ -49,9 +62,8 @@ This first version mostly uses official tool docs, OWASP-style web methodology, 
 
 ## Next Iteration
 
-The next stage should make modules first-class in the backend:
+The next stage should connect module planning to PenPal's intelligence loop:
 
-- Add `penpal modules list` and `penpal modules plan <target> <module>` to the main CLI.
 - Attach module IDs and source metadata to suggestions.
 - Add an execution path that can run a planned command, capture stdout/stderr, and store evidence.
 - Add ATT&CK fields where relevant, especially for authenticated enumeration and Active Directory workflows.
