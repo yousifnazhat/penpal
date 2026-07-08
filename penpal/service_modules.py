@@ -26,6 +26,7 @@ class PlannedModuleCommand:
     module: str
     label: str
     args: list[str]
+    cwd: str
     service_key: str
     source_label: str
     source_tier: str
@@ -39,6 +40,7 @@ class PlannedModuleCommand:
             "module": self.module,
             "label": self.label,
             "args": list(self.args),
+            "cwd": self.cwd,
             "service_key": self.service_key,
             "source_label": self.source_label,
             "source_tier": self.source_tier,
@@ -255,6 +257,7 @@ def build_module_plan(
 ) -> list[PlannedModuleCommand]:
     module = get_module(module_name)
     module_dir = target_dir / "modules" / module.name
+    module_dir.mkdir(parents=True, exist_ok=True)
     context = _render_context(target, module, module_dir, services, parameters, reveal_secrets)
 
     plan: list[PlannedModuleCommand] = []
@@ -266,6 +269,7 @@ def build_module_plan(
                 module=module.name,
                 label=template.label,
                 args=rendered_args,
+                cwd=str(module_dir),
                 service_key=_render_value(template.service_key, context),
                 source_label=template.source_label,
                 source_tier=_highest_source_tier(template.sources),
