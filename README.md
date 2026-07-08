@@ -174,6 +174,7 @@ For the product direction and architecture, see:
 - [PI Adapter Contract](docs/PI_ADAPTER.md)
 - [PI Example](examples/pi/README.md)
 - [Playbook Authoring](playbooks/README.md)
+- [Release Notes](docs/RELEASE_NOTES.md)
 - [v1 Release Checklist](docs/V1_RELEASE_CHECKLIST.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Intelligence Loop](docs/INTELLIGENCE_LOOP.md)

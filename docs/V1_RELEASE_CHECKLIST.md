@@ -11,6 +11,7 @@ Use this before cutting the first public contributor-ready PenPal release.
 - [x] Downloaded repo includes a one-command PI install/verify bootstrap.
 - [x] Fresh public clone PI cockpit smoke passes.
 - [x] Project-local PI package loads the PenPal extension without an explicit `-e` flag.
+- [x] `docs/RELEASE_NOTES.md` describes the `v0.1.0` release candidate.
 - [x] `LICENSE`, `CONTRIBUTING.md`, and `SECURITY.md` are present.
 - [x] GitHub CI runs tests and playbook validation.
 - [x] Community playbooks have safety flags and visible commands.
@@ -40,6 +41,13 @@ Last local verification: 2026-07-08.
 - PI mutating ingest smoke confirmed non-interactive rejection leaves evidence empty, while interactive approval shows the explicit `PenPal ingest approval` dialog and adds six deterministic evidence records.
 
 Local note: this workstation exposes `python3` as Python 3.9.6 and has no `python3.11` on `PATH`; Python 3.11 proof comes from CI until a local 3.11 runtime is available.
+
+## Release candidate
+
+- Package version: `0.1.0`
+- Tag target: `v0.1.0`
+- Release notes: [Release Notes](RELEASE_NOTES.md)
+- Next proof before tagging: run the GitHub release archive smoke, not only a branch clone.
 
 ## Manual smoke test
 
