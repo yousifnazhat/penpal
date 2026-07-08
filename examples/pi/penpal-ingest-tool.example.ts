@@ -39,15 +39,15 @@ export function registerPenpalIngestTool(pi: ExtensionAPI) {
         "--json",
       ];
       const approved = await ctx.ui.confirm(
+        "PenPal ingest approval",
         [
-          `PenPal will ingest operator-provided text into target ${JSON.stringify(params.target)}.`,
+          `Target: ${JSON.stringify(params.target)}`,
           `Workspace: ${workspace ?? "default"}`,
           `Command argv: ${JSON.stringify(command)}`,
           `Source: ${JSON.stringify(params.source)}`,
           `Service: ${service ? JSON.stringify(service) : "none"}`,
           `Input bytes: ${Buffer.byteLength(params.text, "utf8")}`,
           "This may add evidence and trigger new deterministic suggestions.",
-          "Approve?",
         ].join("\n"),
       );
       if (!approved) {

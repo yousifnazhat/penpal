@@ -35,14 +35,17 @@ The first candidate is `penpal_ingest`, because it only adds operator-provided o
 Minimum approval text:
 
 ```text
-PenPal will ingest operator-provided text into target <target>.
+PenPal ingest approval
+Target: <target>
+Workspace: <workspace or default>
 Command argv: <argv>
 Source: <source>
 Service: <service or none>
 Input bytes: <size>
 This may add evidence and trigger new deterministic suggestions.
-Approve?
 ```
+
+PI supplies the Yes/No selector. The operator should reject if any field is missing or does not match the intended operation.
 
 ## Still blocked for v1
 

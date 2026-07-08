@@ -107,6 +107,36 @@ Unavailable
 
 Use interactive PI for `penpal_ingest`; `pi -p` cannot approve the confirmation prompt and should reject the tool call.
 
+Start with a clean smoke workspace:
+
+```bash
+rm -rf penpal-pi-ingest-smoke
+python3 -m penpal --workspace penpal-pi-ingest-smoke init 10.10.10.5 --name demo --force
+```
+
+Non-interactive rejection proof:
+
+```bash
+PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-pi-ingest-smoke PENPAL_ENABLE_MUTATING_TOOLS=true pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_ingest -e ./examples/pi/penpal-extension.example.ts -p "Use penpal_ingest for target demo exactly once with source \"snmpwalk-smoke\", service \"udp/161\", and text exactly: User: daniel. Return only the tool result."
+python3 -m penpal --workspace penpal-pi-ingest-smoke evidence demo --json
+```
+
+Expected:
+
+```text
+Operator rejected PenPal ingest.
+```
+
+The evidence JSON should remain empty:
+
+```json
+{
+  "evidence": []
+}
+```
+
+Interactive approval proof:
+
 ```bash
 PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-pi-ingest-smoke PENPAL_ENABLE_MUTATING_TOOLS=true pi --provider openai-codex --model gpt-5.4-mini --no-builtin-tools --tools penpal_ingest -e ./examples/pi/penpal-extension.example.ts
 ```
@@ -122,10 +152,17 @@ email: daniel@example.local
 Return only added count, ignored_duplicates, and evidence types. Do not call any other tool.
 ```
 
-Approve only after PI shows the target, workspace, argv, source, service, and input byte count. Verify the mutation outside PI:
+Approve only after PI shows `PenPal ingest approval`, target, workspace, argv, source, service, input byte count, and Yes/No choices. Verify the mutation outside PI:
 
 ```bash
-python3 -m penpal --workspace penpal-pi-ingest-smoke evidence demo
+python3 -m penpal --workspace penpal-pi-ingest-smoke evidence demo --json
+python3 -m penpal --workspace penpal-pi-ingest-smoke suggest demo --json
 ```
+
+Expected proof:
+
+- PI returns `added count: 6`, `ignored_duplicates: 0`, and evidence types `hostname`, `username`, `email`, `domain`, `interesting_file`, and `web_path`.
+- PenPal CLI shows six stored evidence records from `snmpwalk-smoke` on `udp/161`.
+- PenPal suggestions include `review_web_paths` and `review_interesting_files` for `/backup.zip`.
 
 PI extension primitives used here follow the public PI extension docs: `ExtensionAPI`, `pi.registerTool`, and `typebox` schemas.
