@@ -9,6 +9,7 @@ Use this before cutting the first public contributor-ready PenPal release.
 - [x] README quick start works from a clean clone.
 - [x] README and setup docs present PI as the intended v1 conversational cockpit.
 - [x] Downloaded repo includes a one-command PI install/verify bootstrap.
+- [x] Fresh public clone PI cockpit smoke passes.
 - [x] `LICENSE`, `CONTRIBUTING.md`, and `SECURITY.md` are present.
 - [x] GitHub CI runs tests and playbook validation.
 - [x] Community playbooks have safety flags and visible commands.
@@ -30,6 +31,7 @@ Last local verification: 2026-07-08.
 - `python3 -m penpal playbooks playbooks`: 4 valid playbooks, 0 invalid.
 - `./scripts/setup-pi.sh`: verified the local PI command and printed the PenPal extension launch path.
 - README quick start passed from a fresh worktree copy with a new workspace.
+- Fresh public clone smoke passed: `./scripts/setup-pi.sh`, demo target creation, Nmap parse, evidence ingest, PI forced `penpal_context`, and PI forced `penpal_module_plan`.
 - `.github/workflows/ci.yml` runs tests and playbook validation on Python 3.11.
 - PI read-only smoke matrix passed with `--no-builtin-tools` for `penpal_playbooks_validate`, `penpal_context`, `penpal_suggest`, `penpal_evidence`, `penpal_playbook_show`, `penpal_modules_list`, and `penpal_module_plan`.
 - PI default mutating-tool smoke confirmed `penpal_ingest` is unavailable unless `PENPAL_ENABLE_MUTATING_TOOLS=true`.
