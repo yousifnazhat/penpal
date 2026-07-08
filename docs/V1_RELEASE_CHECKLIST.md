@@ -12,6 +12,7 @@ Use this before cutting the first public contributor-ready PenPal release.
 - [x] Fresh public clone PI cockpit smoke passes.
 - [x] Project-local PI package loads the PenPal extension without an explicit `-e` flag.
 - [x] `docs/RELEASE_NOTES.md` describes the `v0.1.0` release candidate.
+- [x] GitHub archive smoke passes for the `v0.1.0` release-candidate commit.
 - [x] `LICENSE`, `CONTRIBUTING.md`, and `SECURITY.md` are present.
 - [x] GitHub CI runs tests and playbook validation.
 - [x] Community playbooks have safety flags and visible commands.
@@ -35,6 +36,7 @@ Last local verification: 2026-07-08.
 - README quick start passed from a fresh worktree copy with a new workspace.
 - Fresh public clone smoke passed: `./scripts/setup-pi.sh`, demo target creation, Nmap parse, evidence ingest, PI forced `penpal_context`, and PI forced `penpal_module_plan`.
 - Project-local PI package smoke passed without `-e`: `pi --approve --no-builtin-tools --tools penpal_playbooks_validate` returned 4 valid playbooks, and `penpal_module_plan` returned SNMP command IDs for the demo target.
+- GitHub archive smoke passed for `d586d11e4b0dd8f348184ba74d8affae16184059`: archive contained `.pi/settings.json`, `package.json`, `scripts/setup-pi.sh`, and `docs/RELEASE_NOTES.md`; `./scripts/setup-pi.sh`, unit tests, playbook validation, PI package `penpal_playbooks_validate`, and PI package `penpal_module_plan` passed from the unpacked archive.
 - `.github/workflows/ci.yml` runs tests and playbook validation on Python 3.11.
 - PI read-only smoke matrix passed with `--no-builtin-tools` for `penpal_playbooks_validate`, `penpal_context`, `penpal_suggest`, `penpal_evidence`, `penpal_playbook_show`, `penpal_modules_list`, and `penpal_module_plan`.
 - PI default mutating-tool smoke confirmed `penpal_ingest` is unavailable unless `PENPAL_ENABLE_MUTATING_TOOLS=true`.
@@ -47,7 +49,7 @@ Local note: this workstation exposes `python3` as Python 3.9.6 and has no `pytho
 - Package version: `0.1.0`
 - Tag target: `v0.1.0`
 - Release notes: [Release Notes](RELEASE_NOTES.md)
-- Next proof before tagging: run the GitHub release archive smoke, not only a branch clone.
+- Next step: create and push the annotated `v0.1.0` tag.
 
 ## Manual smoke test
 
