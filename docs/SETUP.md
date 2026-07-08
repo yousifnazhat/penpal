@@ -41,11 +41,10 @@ Do not publish from automation unless the maintainer explicitly asks for a commi
 
 Use the read-only PI extension in `examples/pi/` as the official v1 cockpit path.
 
-Install PI:
+Git clone/download does not auto-run installers. Run the repo bootstrap once to install or verify PI:
 
 ```bash
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
-pi --version
+./scripts/setup-pi.sh
 ```
 
 Log into a model provider from PI before testing the extension:

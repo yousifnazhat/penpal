@@ -12,11 +12,10 @@ It uses PI custom tools to read PenPal's deterministic context and playbook data
 
 ## Usage sketch
 
-Point PI at this repository:
+From the repository root, install or verify PI:
 
 ```bash
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
-pi --version
+./scripts/setup-pi.sh
 pi
 /login
 ```
@@ -24,7 +23,7 @@ pi
 ```bash
 export PENPAL_CWD=/path/to/penpal
 export PENPAL_WORKSPACE=penpal-workspace
-pi -e ./penpal-extension.example.ts
+pi -e ./examples/pi/penpal-extension.example.ts
 ```
 
 If `pi --list-models` says no models are available, finish `/login` before testing the extension.
