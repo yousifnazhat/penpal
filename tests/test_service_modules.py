@@ -16,12 +16,15 @@ class ServiceModuleTests(unittest.TestCase):
         params = {"community": Parameter(name="community", value="public")}
 
         with TemporaryDirectory() as temp_dir:
-            plan = build_module_plan("snmp", target, Path(temp_dir), services, params)
+            target_dir = Path(temp_dir)
+            plan = build_module_plan("snmp", target, target_dir, services, params)
+            walk = next(command for command in plan if command.id == "snmp-walk")
 
-        walk = next(command for command in plan if command.id == "snmp-walk")
-        self.assertIn("public", walk.args)
-        self.assertEqual(walk.service_key, "udp/161")
-        self.assertTrue(any(source["source_tier"] in {"official", "internal"} for source in walk.sources))
+            self.assertTrue((target_dir / "modules" / "snmp").is_dir())
+            self.assertEqual(Path(walk.cwd).name, "snmp")
+            self.assertIn("public", walk.args)
+            self.assertEqual(walk.service_key, "udp/161")
+            self.assertTrue(any(source["source_tier"] in {"official", "internal"} for source in walk.sources))
 
     def test_sensitive_parameters_are_masked_by_default(self) -> None:
         target = Target(name="box", host="10.10.10.5")
