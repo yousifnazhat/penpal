@@ -69,6 +69,29 @@ export default function (pi: ExtensionAPI) {
       return textResult(await penpal(["playbooks", "playbooks", "--show", params.id], signal));
     },
   });
+
+  pi.registerTool({
+    name: "penpal_modules_list",
+    label: "List PenPal service modules",
+    description: "Read PenPal's source-backed service module registry.",
+    parameters: Type.Object({}),
+    async execute(_toolCallId, _params, signal) {
+      return textResult(await penpal(["modules", "list", "--json"], signal));
+    },
+  });
+
+  pi.registerTool({
+    name: "penpal_module_plan",
+    label: "Plan PenPal service module",
+    description: "Read a source-backed service module plan for one target without executing commands.",
+    parameters: Type.Object({
+      target: Type.String({ description: "PenPal target name" }),
+      module: Type.String({ description: "Module name, such as snmp, web, smb, or dns" }),
+    }),
+    async execute(_toolCallId, params, signal) {
+      return textResult(await penpal(["modules", "plan", params.target, params.module, "--json"], signal));
+    },
+  });
 }
 
 async function penpal(args: string[], signal?: AbortSignal): Promise<string> {
