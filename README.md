@@ -57,10 +57,10 @@ python -m penpal playbooks playbooks --show snmp-mail-remote
 
 ### PI cockpit
 
-PI is the intended conversational layer for v1. After creating demo data, launch the PenPal extension from this repository:
+PI is the intended conversational layer for v1. After creating demo data, install or verify PI from the downloaded repository:
 
 ```bash
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+./scripts/setup-pi.sh
 pi
 /login
 ```
@@ -71,7 +71,7 @@ export PENPAL_WORKSPACE=penpal-workspace
 pi -e ./examples/pi/penpal-extension.example.ts
 ```
 
-The PI extension reads the same masked PenPal context and suggestions as the CLI. Forced-tool smoke tests live in [PI Example](examples/pi/README.md).
+The setup script installs PI globally through npm as `@earendil-works/pi-coding-agent` when the `pi` command is missing. It never handles provider tokens or API keys. The PI extension reads the same masked PenPal context and suggestions as the CLI. Forced-tool smoke tests live in [PI Example](examples/pi/README.md).
 
 Suggestions include copy-ready syntax with the target host filled in where possible. Values the tool cannot know yet stay explicit:
 
