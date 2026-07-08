@@ -65,6 +65,27 @@ class CliTests(unittest.TestCase):
             ],
         )
 
+    def test_modules_plan_json_renders_source_backed_syntax(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            target = workspace.create_target("10.10.10.5", name="module-box")
+            workspace.merge_services(target.name, [Service(port=161, protocol="udp", name="snmp")])
+            workspace.set_parameter(target.name, "community", "public")
+
+            listed = run_json(["--workspace", temp_dir, "modules", "list", "--json"])
+            planned = run_json(["--workspace", temp_dir, "modules", "plan", target.name, "snmp", "--json"])
+
+        self.assertIn("snmp", [module["name"] for module in listed["modules"]])
+        self.assertEqual(planned["module"]["name"], "snmp")
+        self.assertTrue(planned["matched_services"])
+        self.assertEqual(
+            [command["id"] for command in planned["commands"]],
+            ["snmp-nmap-info", "snmp-community-check", "snmp-walk"],
+        )
+        walk = next(command for command in planned["commands"] if command["id"] == "snmp-walk")
+        self.assertIn("public", walk["args"])
+        self.assertEqual(walk["source_tier"], "internal")
+
     def test_suggest_explains_playbook_matches(self) -> None:
         with TemporaryDirectory() as temp_dir:
             workspace = Workspace(temp_dir)
