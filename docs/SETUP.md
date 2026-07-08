@@ -9,8 +9,8 @@ Use Python 3.11 or newer. If your shell exposes it as `python3`, substitute `pyt
 ```bash
 git clone https://github.com/yousifnazhat/penpal.git
 cd penpal
-python -m unittest discover -v
-python -m penpal playbooks playbooks
+python3 -m unittest discover -v
+python3 -m penpal playbooks playbooks
 ```
 
 No API keys are required for the deterministic core. PI requires its own provider login for the conversational cockpit.
@@ -18,12 +18,13 @@ No API keys are required for the deterministic core. PI requires its own provide
 ## First smoke test
 
 ```bash
-python -m penpal init 10.10.10.5 --name demo
-python -m penpal context demo --json
-python -m penpal playbooks playbooks --show snmp-mail-remote
+python3 -m penpal --workspace penpal-workspace init 10.10.10.5 --name demo --force
+python3 -m penpal --workspace penpal-workspace parse-nmap demo examples/pi/demo-nmap.xml
+python3 -m penpal --workspace penpal-workspace suggest demo
+python3 -m penpal playbooks playbooks --show snmp-mail-remote
 ```
 
-`context` output is masked by default and is the safest input for PI or another harness.
+`penpal-workspace/` is ignored by Git. `context` output is masked by default and is the safest input for PI or another harness.
 
 ## GitHub workflow
 
@@ -55,6 +56,12 @@ pi
 ```
 
 PenPal ships a project-local PI package setting in `.pi/settings.json`, so running `pi` from the repository root loads the PenPal extension after you approve project-local files. Do not commit provider tokens or API keys. PI stores OAuth/API-key auth outside this repository.
+
+Once PI opens, try:
+
+```text
+Use PenPal to summarize target demo and recommend next checks.
+```
 
 Keep mutating tools disabled unless the operator approval flow is enabled and tested.
 
