@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import argparse
 import json
@@ -14,6 +14,7 @@ from .nmap_parser import NmapParseError, parse_nmap_xml
 from .playbooks import find_playbook, format_playbook, load_playbooks, scan_notes_vault, scan_playbooks
 from .runner import RunnerError, run_plan
 from .scan_profiles import PROFILE_CHOICES, build_scan_plan, format_command
+from .service_modules import build_module_plan, get_module, module_matches_services, module_names
 from .sources import (
     DEFAULT_CACHE_DIR,
     DEFAULT_FACTS_PATH,
@@ -105,6 +106,20 @@ def build_parser() -> argparse.ArgumentParser:
     context_cmd.add_argument("--reveal-secrets", action="store_true", help="Include sensitive parameters and evidence.")
     context_cmd.add_argument("--json", action="store_true", help="Emit raw JSON. Context output is always JSON.")
     context_cmd.set_defaults(func=cmd_context)
+
+    modules_cmd = subcommands.add_parser("modules", help="Plan source-backed service enumeration modules.")
+    modules_subcommands = modules_cmd.add_subparsers(dest="modules_action", required=True)
+
+    modules_list_cmd = modules_subcommands.add_parser("list", help="List available service modules.")
+    modules_list_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    modules_list_cmd.set_defaults(func=cmd_modules_list)
+
+    modules_plan_cmd = modules_subcommands.add_parser("plan", help="Plan exact syntax for one target and module.")
+    modules_plan_cmd.add_argument("name", help="Target name.")
+    modules_plan_cmd.add_argument("module", choices=module_names(), help="Module name, such as snmp, web, smb, or dns.")
+    modules_plan_cmd.add_argument("--reveal-secrets", action="store_true", help="Render sensitive parameter values in planned syntax.")
+    modules_plan_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    modules_plan_cmd.set_defaults(func=cmd_modules_plan)
 
     params_cmd = subcommands.add_parser("params", help="Manage target parameters used to fill command placeholders.")
     params_cmd.add_argument("name", help="Target name.")
@@ -367,6 +382,53 @@ def cmd_context(args: argparse.Namespace, workspace: Workspace) -> int:
     return 0
 
 
+def cmd_modules_list(args: argparse.Namespace, workspace: Workspace) -> int:
+    modules = [get_module(name) for name in module_names()]
+    payload = {"modules": [_module_to_dict(module) for module in modules]}
+    if args.json:
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    for module in modules:
+        ports = ",".join(str(port) for port in module.ports)
+        print(f"{module.name:<8} ports {ports:<24} {module.description}")
+    return 0
+
+
+def cmd_modules_plan(args: argparse.Namespace, workspace: Workspace) -> int:
+    target = workspace.require_target(args.name)
+    services = workspace.load_services(target.name)
+    module = get_module(args.module)
+    commands = build_module_plan(
+        args.module,
+        target,
+        workspace.target_path(target.name),
+        services,
+        workspace.load_parameters(target.name),
+        reveal_secrets=args.reveal_secrets,
+    )
+    payload = {
+        "target": target.to_dict(),
+        "module": _module_to_dict(module),
+        "matched_services": module_matches_services(args.module, services),
+        "commands": [command.to_dict() for command in commands],
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    print(f"{module.name} module for {target.name} ({target.host})")
+    print(f"matched services: {payload['matched_services']}")
+    for command in commands:
+        print(f"\n[{command.id}] {command.label}")
+        print(format_command(command.args))
+        print(f"service: {command.service_key or 'unmatched'}")
+        print(f"source tier: {command.source_tier}")
+        for source in command.sources:
+            print(f"- {source['title']} ({source['source_tier']})")
+    return 0
+
+
 def cmd_params_list(args: argparse.Namespace, workspace: Workspace) -> int:
     workspace.require_target(args.name)
     parameters = workspace.load_parameters(args.name)
@@ -566,6 +628,26 @@ def _matched_signal_lines(metadata: dict[str, Any]) -> list[str]:
             if isinstance(fact, str) and fact.strip():
                 lines.append(f"{signal_type}: {fact}")
     return lines[:8]
+
+
+def _module_to_dict(module: Any) -> dict[str, Any]:
+    return {
+        "name": module.name,
+        "description": module.description,
+        "ports": list(module.ports),
+        "service_names": list(module.service_names),
+        "commands": [
+            {
+                "id": template.id,
+                "label": template.label,
+                "source_label": template.source_label,
+                "risk": template.risk,
+                "tags": list(template.tags),
+                "sources": [source.to_dict() for source in template.sources],
+            }
+            for template in module.templates
+        ],
+    }
 
 
 if __name__ == "__main__":
