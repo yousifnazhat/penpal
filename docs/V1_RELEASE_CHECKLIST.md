@@ -30,6 +30,7 @@ Last local verification: 2026-07-08.
 - `.github/workflows/ci.yml` runs tests and playbook validation on Python 3.11.
 - PI read-only smoke matrix passed with `--no-builtin-tools` for `penpal_playbooks_validate`, `penpal_context`, `penpal_suggest`, `penpal_evidence`, and `penpal_playbook_show`.
 - PI default mutating-tool smoke confirmed `penpal_ingest` is unavailable unless `PENPAL_ENABLE_MUTATING_TOOLS=true`.
+- PI mutating ingest smoke confirmed non-interactive rejection leaves evidence empty, while interactive approval shows the explicit `PenPal ingest approval` dialog and adds six deterministic evidence records.
 
 Local note: this workstation exposes `python3` as Python 3.9.6 and has no `python3.11` on `PATH`; Python 3.11 proof comes from CI until a local 3.11 runtime is available.
 
