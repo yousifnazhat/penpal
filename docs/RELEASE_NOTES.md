@@ -9,13 +9,20 @@ PenPal `0.1.0` is the first public contributor-ready release candidate. It keeps
 ```bash
 git clone https://github.com/yousifnazhat/penpal.git
 cd penpal
-python -m unittest discover -v
-python -m penpal playbooks playbooks
+python3 -m unittest discover -v
+python3 -m penpal playbooks playbooks
+python3 -m penpal --workspace penpal-workspace init 10.10.10.5 --name demo --force
+python3 -m penpal --workspace penpal-workspace parse-nmap demo examples/pi/demo-nmap.xml
+python3 -m penpal --workspace penpal-workspace suggest demo
 ./scripts/setup-pi.sh
 pi
 ```
 
-On first PI launch, approve project-local files if prompted. Run `/login` inside PI if a provider is not configured.
+On first PI launch, approve project-local files if prompted. Run `/login` inside PI if a provider is not configured, then ask:
+
+```text
+Use PenPal to summarize target demo and recommend next checks.
+```
 
 ### Included
 
@@ -35,7 +42,7 @@ On first PI launch, approve project-local files if prompted. Run `/login` inside
 - Sensitive parameters and credential-like evidence stay masked by default.
 - Mutating PI tools require explicit opt-in and operator approval.
 
-### Pre-Tag Checks
+### Verify The Release
 
 ```bash
 python3 -m unittest discover -v
@@ -44,4 +51,4 @@ python3 -m penpal playbooks playbooks
 git diff --check
 ```
 
-Before tagging, run the clean-clone and release-archive smoke from [v1 Release Checklist](V1_RELEASE_CHECKLIST.md).
+The clean-clone, tag archive, and release tarball smoke results are tracked in [v1 Release Checklist](V1_RELEASE_CHECKLIST.md).

@@ -53,7 +53,7 @@ Status snapshot, last updated 2026-07-08:
 | Evaluation corpus | Active now | Demo fixtures and source-backed eval cases assert expected IDs, types, masking, suggestion order, reviewed source facts, and safety assertions | Add the next service-chain eval only after this one stays stable |
 | Community playbooks | Active now | Validator, examples, template, docs, source facts, and tests prove reviewed material stays cited before promotion | Improve contributor authoring errors and review guidance |
 | MCP portability | Queued | `docs/MCP_ADAPTER.md` defines the safe read-only plan | Build only after contracts/evals are stable enough to preserve |
-| Public v1 | Release prep | `docs/V1_RELEASE_CHECKLIST.md` and `docs/RELEASE_NOTES.md` track ship/no-ship gates and the `v0.1.0` release candidate | Smoke the release archive before tagging |
+| Public v1 | Prerelease published | `v0.1.0` is tagged and published as a GitHub prerelease with release-tarball smoke complete | Collect onboarding friction before expanding distribution or adapter surfaces |
 | Post-v1 automation | Deferred | Roadmap lists scope, audit log, review workflow, and approved mutating actions | Start after public v1 |
 | Later harnesses | Deferred | Harness strategy defers Hermes/OpenClaw | Revisit only after schemas, evals, and approval gates are stable |
 

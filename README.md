@@ -28,6 +28,28 @@ The first version focuses on the boring parts that make enumeration smoother:
 
 ## Quick Start
 
+### First 5 minutes
+
+From a clone or release archive, use the bundled demo data to prove the core and PI path:
+
+```bash
+python3 -m unittest discover -v
+python3 -m penpal playbooks playbooks
+python3 -m penpal --workspace penpal-workspace init 10.10.10.5 --name demo --force
+python3 -m penpal --workspace penpal-workspace parse-nmap demo examples/pi/demo-nmap.xml
+python3 -m penpal --workspace penpal-workspace suggest demo
+./scripts/setup-pi.sh
+pi
+```
+
+Inside PI, approve project-local files if prompted, then run `/login` if no provider is configured. Once PI opens, try:
+
+```text
+Use PenPal to summarize target demo and recommend next checks.
+```
+
+The demo writes to `penpal-workspace/`, which is ignored by Git.
+
 ### PenPal core
 
 From this directory:
@@ -64,7 +86,7 @@ PI is the intended conversational layer for v1. After creating demo data, instal
 pi
 ```
 
-Run `/login` inside PI if it asks for a provider login. On first launch, approve the project-local files when PI prompts; `.pi/settings.json` loads the PenPal PI package from this repository.
+Run `/login` inside PI if it asks for a provider login. On first launch, approve the project-local files when PI prompts; `.pi/settings.json` loads the PenPal PI package from this repository so the PenPal tools are available in the conversation.
 
 The setup script installs PI globally through npm as `@earendil-works/pi-coding-agent` when the `pi` command is missing. It never handles provider tokens or API keys. The PI extension reads the same masked PenPal context and suggestions as the CLI. Forced-tool smoke tests live in [PI Example](examples/pi/README.md).
 
