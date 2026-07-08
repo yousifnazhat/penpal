@@ -4,6 +4,13 @@ PenPal's service module layer turns discovered services into source-backed enume
 
 This layer is currently plan-only. It does not run commands or ingest output by itself yet.
 
+PI exposes the same layer through read-only tools:
+
+- `penpal_modules_list`
+- `penpal_module_plan`
+
+These tools return module metadata and planned command syntax only. They do not pass `--reveal-secrets` and do not execute scans.
+
 ## Current Modules
 
 The initial registry covers four high-value enumeration areas:

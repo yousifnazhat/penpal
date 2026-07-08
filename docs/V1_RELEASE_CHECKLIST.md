@@ -16,6 +16,7 @@ Use this before cutting the first public contributor-ready PenPal release.
 - [x] Demo contract fixture protects context, evidence, and suggestion shapes.
 - [x] Playbook matched-signal metadata is covered by a contract fixture.
 - [x] CLI JSON outputs for context, evidence, and suggestions are covered by a contract fixture.
+- [x] Service module planning is covered by CLI and module fixtures.
 - [x] PI smoke matrix covers every shipped PI tool.
 - [x] `docs/CONTRACTS.md` reflects the shipped harness contracts.
 - [x] Playbook contributor template is valid but not loaded as a shipped playbook.
@@ -24,11 +25,11 @@ Use this before cutting the first public contributor-ready PenPal release.
 
 Last local verification: 2026-07-08.
 
-- `python3 -m unittest discover -v`: 38 tests passed.
+- `python3 -m unittest discover -v`: 43 tests passed.
 - `python3 -m penpal playbooks playbooks`: 4 valid playbooks, 0 invalid.
 - README quick start passed from a fresh worktree copy with a new workspace.
 - `.github/workflows/ci.yml` runs tests and playbook validation on Python 3.11.
-- PI read-only smoke matrix passed with `--no-builtin-tools` for `penpal_playbooks_validate`, `penpal_context`, `penpal_suggest`, `penpal_evidence`, and `penpal_playbook_show`.
+- PI read-only smoke matrix passed with `--no-builtin-tools` for `penpal_playbooks_validate`, `penpal_context`, `penpal_suggest`, `penpal_evidence`, `penpal_playbook_show`, `penpal_modules_list`, and `penpal_module_plan`.
 - PI default mutating-tool smoke confirmed `penpal_ingest` is unavailable unless `PENPAL_ENABLE_MUTATING_TOOLS=true`.
 - PI mutating ingest smoke confirmed non-interactive rejection leaves evidence empty, while interactive approval shows the explicit `PenPal ingest approval` dialog and adds six deterministic evidence records.
 
