@@ -1,8 +1,8 @@
 # PI example
 
-This folder sketches a safe first PI integration for PenPal.
+This folder contains the safe first PI cockpit integration for PenPal.
 
-It uses PI custom tools to read PenPal's deterministic context and playbook data. It does not expose command execution, credential reveal, C2 tasking, or exploit delivery.
+It uses PI custom tools to read PenPal's deterministic context and playbook data. PI provides the conversational layer; PenPal remains the source of truth. The default extension does not expose command execution, credential reveal, C2 tasking, or exploit delivery.
 
 ## Files
 
@@ -12,7 +12,7 @@ It uses PI custom tools to read PenPal's deterministic context and playbook data
 
 ## Usage sketch
 
-Copy the example into a PI extension location, then point it at this repository:
+Point PI at this repository:
 
 ```bash
 npm install -g --ignore-scripts @earendil-works/pi-coding-agent
@@ -82,7 +82,26 @@ PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex -
 PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_playbook_show -e ./examples/pi/penpal-extension.example.ts -p "Use penpal_playbook_show for id snmp-mail-remote once. Return only the title, signals, and safety flags."
 ```
 
+Expected proof:
+
+- `penpal_context`: `penpal-context-v1`, host `10.10.10.5`, three open services, SNMP/mail/remote suggestions, and playbook `matched_signals`.
+- `penpal_suggest`: deterministic suggestion IDs including `path_snmp_mail_remote` and `playbook_snmp-mail-remote`.
+- `penpal_evidence`: six evidence items with domain, email, hostname, interesting file, username, and web path types.
+- `penpal_playbook_show`: `SNMP to mail to remote access`, three signals, and both safety flags set to true.
+
 Keep the first integration read-only by default. `penpal_ingest` is registered only when `PENPAL_ENABLE_MUTATING_TOOLS=true`; it requires an operator confirmation, a non-empty source, and bounded input before ingesting anything.
+
+Default mutating-tool proof:
+
+```bash
+PENPAL_CWD="$PWD" PENPAL_WORKSPACE=penpal-workspace pi --provider openai-codex --model gpt-5.4-mini --no-session --no-builtin-tools --tools penpal_ingest -e ./examples/pi/penpal-extension.example.ts -p "Try to use penpal_ingest for target demo once. Return only whether the tool is available."
+```
+
+Expected:
+
+```text
+Unavailable
+```
 
 ## Mutating ingest smoke test
 

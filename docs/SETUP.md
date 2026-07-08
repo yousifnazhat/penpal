@@ -1,8 +1,10 @@
 # Setup
 
-PenPal is local-first. You need Python and GitHub for the public contributor workflow; PI is only needed when testing the agent harness.
+PenPal is local-first. The deterministic core runs with Python; the intended v1 cockpit runs through PI. You need GitHub for the public contributor workflow.
 
 ## Local development
+
+Use Python 3.11 or newer. If your shell exposes it as `python3`, substitute `python3` for `python` in the commands below.
 
 ```bash
 git clone https://github.com/yousifnazhat/penpal.git
@@ -11,7 +13,7 @@ python -m unittest discover -v
 python -m penpal playbooks playbooks
 ```
 
-No API keys are required for the deterministic core.
+No API keys are required for the deterministic core. PI requires its own provider login for the conversational cockpit.
 
 ## First smoke test
 
@@ -35,9 +37,9 @@ local change -> tests -> commit -> push branch -> draft PR -> CI -> review
 
 Do not publish from automation unless the maintainer explicitly asks for a commit, push, or PR.
 
-## PI workflow
+## PI cockpit workflow
 
-Start with the read-only PI extension in `examples/pi/`.
+Use the read-only PI extension in `examples/pi/` as the official v1 cockpit path.
 
 Install PI:
 
@@ -61,7 +63,7 @@ pi -e ./examples/pi/penpal-extension.example.ts
 
 Do not commit provider tokens or API keys. PI stores OAuth/API-key auth outside this repository.
 
-Keep mutating tools disabled until operator approval is implemented and tested.
+Keep mutating tools disabled unless the operator approval flow is enabled and tested.
 
 See `examples/pi/README.md` for forced-tool smoke tests that verify PI is using the PenPal extension.
 
