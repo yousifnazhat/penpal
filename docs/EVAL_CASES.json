@@ -1,0 +1,65 @@
+{
+  "schema": "penpal-eval-cases-v1",
+  "cases": [
+    {
+      "id": "demo-nmap-snmp-mail-remote",
+      "description": "Nmap-derived service evidence plus SNMP output should preserve the high-signal SNMP to mail to remote-access path.",
+      "source_fact_ids": [
+        "nmap-port-state-service-table",
+        "nmap-version-detail-followup",
+        "nmap-aggressive-scan-needs-approval"
+      ],
+      "target": {
+        "name": "demo",
+        "host": "10.10.10.5"
+      },
+      "nmap_xml": "examples/pi/demo-nmap.xml",
+      "evidence": {
+        "source": "snmpwalk-smoke",
+        "service": "udp/161",
+        "text": "SNMPv2-MIB::sysName.0 = STRING: mail01.example.local\nUser: daniel\nemail: daniel@example.local\n/backup.zip Status: 200, Size: 9001\n"
+      },
+      "expected_top_suggestion_ids": [
+        "path_snmp_mail_remote",
+        "usernames_to_mail"
+      ],
+      "required_suggestion_ids": [
+        "playbook_snmp-mail-remote"
+      ],
+      "forbidden_command_fragments": [
+        "nmap -A",
+        "-A -T4"
+      ]
+    },
+    {
+      "id": "demo-nmap-http-vhosts-paths",
+      "description": "Nmap-derived HTTP service evidence plus web output should preserve vhost and web-path follow-up suggestions.",
+      "source_fact_ids": [
+        "nmap-port-state-service-table",
+        "nmap-version-detail-followup",
+        "nmap-aggressive-scan-needs-approval"
+      ],
+      "target": {
+        "name": "webdemo",
+        "host": "10.10.10.8"
+      },
+      "nmap_xml": "examples/pi/demo-http-nmap.xml",
+      "evidence": {
+        "source": "feroxbuster-smoke",
+        "service": "tcp/80",
+        "text": "Host: intranet.example.local\n/admin Status: 200, Size: 1234\n/login Status: 302, Size: 97\n"
+      },
+      "expected_top_suggestion_ids": [
+        "hostnames_to_vhosts",
+        "review_web_paths"
+      ],
+      "required_suggestion_ids": [
+        "playbook_http-vhosts-hidden-apps"
+      ],
+      "forbidden_command_fragments": [
+        "nmap -A",
+        "-A -T4"
+      ]
+    }
+  ]
+}

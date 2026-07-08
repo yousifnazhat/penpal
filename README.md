@@ -1,12 +1,20 @@
 ﻿# PenPal
 
-Backend-first enumeration assistant for authorized pentesters.
+Authorized enumeration assistant for pentesters, with PenPal as the deterministic core and PI as the intended conversational cockpit.
 
 PenPal is being designed as a product-quality tool, not just a lab script. The core idea is simple:
 
 ```text
 services -> evidence -> parameters -> suggestions -> exact syntax -> more evidence
 ```
+
+The v1 product shape is:
+
+```text
+PenPal core -> PI cockpit -> operator-approved evidence loop
+```
+
+The CLI/API remain the source of truth for storage, parsing, masking, playbook matching, and deterministic suggestions. PI sits on top to explain what PenPal knows, rank next checks, ask for missing evidence, and keep the operator in control.
 
 The first version focuses on the boring parts that make enumeration smoother:
 
@@ -20,14 +28,22 @@ The first version focuses on the boring parts that make enumeration smoother:
 
 ## Quick Start
 
+### PenPal core
+
 From this directory:
 
-```powershell
+Use Python 3.11 or newer. If your shell exposes it as `python3`, substitute `python3` for `python`.
+
+```bash
 python -m penpal init 10.10.10.5 --name nibbles
 python -m penpal scan nibbles --profile quick
-python -m penpal scan nibbles --profile quick --execute
-python -m penpal parse-nmap nibbles .\penpal-workspace\targets\nibbles\scans\nmap\quick.xml
-python -m penpal ingest nibbles --file .\snmpwalk.txt --source snmpwalk --service udp/161
+python -m penpal parse-nmap nibbles examples/pi/demo-nmap.xml
+python -m penpal ingest nibbles --source snmpwalk --service udp/161 <<'EOF'
+SNMPv2-MIB::sysName.0 = STRING: mail01.example.local
+User: daniel
+email: daniel@example.local
+/backup.zip Status: 200, Size: 9001
+EOF
 python -m penpal evidence nibbles
 python -m penpal params nibbles set community public
 python -m penpal params nibbles set known_user daniel
@@ -37,8 +53,25 @@ python -m penpal context nibbles --json
 python -m penpal summary nibbles --write
 python -m penpal playbooks playbooks
 python -m penpal playbooks playbooks --show snmp-mail-remote
-python -m penpal serve
 ```
+
+### PI cockpit
+
+PI is the intended conversational layer for v1. After creating demo data, launch the PenPal extension from this repository:
+
+```bash
+npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+pi
+/login
+```
+
+```bash
+export PENPAL_CWD="$PWD"
+export PENPAL_WORKSPACE=penpal-workspace
+pi -e ./examples/pi/penpal-extension.example.ts
+```
+
+The PI extension reads the same masked PenPal context and suggestions as the CLI. Forced-tool smoke tests live in [PI Example](examples/pi/README.md).
 
 Suggestions include copy-ready syntax with the target host filled in where possible. Values the tool cannot know yet stay explicit:
 
@@ -66,7 +99,7 @@ python -m penpal suggest nibbles --reveal-secrets
 
 Sensitive values are stored locally in `parameters.json` and masked by default in output. Use `--reveal-secrets` only when you intentionally want complete command syntax printed.
 
-For PI or frontend integrations, `python -m penpal context <name> --json` returns a single masked snapshot of the target, services, evidence, parameters, deterministic suggestions, playbook match metadata, and Markdown summary.
+For PI and future frontend integrations, `python -m penpal context <name> --json` returns a single masked snapshot of the target, services, evidence, parameters, deterministic suggestions, playbook match metadata, and Markdown summary.
 
 By default, generated target data lives under:
 
