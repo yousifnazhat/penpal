@@ -43,17 +43,17 @@ PenPal core -> context contract -> PI cockpit -> playbook ecosystem -> MCP porta
 8. **Post-v1 automation**: add scope model, audit log, review workflow, and approved mutating actions.
 9. **Later harnesses**: consider Hermes for long-running copilot workflows and OpenClaw for chat/channel gateways only after schemas, evaluations, and approval gates are stable.
 
-Status snapshot, last updated 2026-07-02:
+Status snapshot, last updated 2026-07-08:
 
 | Stage | Status | What proves it | Next step |
 | --- | --- | --- | --- |
 | PenPal core | Stable foundation, ongoing hardening | CLI/API, workspace storage, evidence ingest, masking, suggestions, and playbook matching are covered by tests | Keep changes deterministic and evidence-backed |
 | Context contract | Active hardening | Contract fixtures protect context, evidence, service, suggestion, masking, matched-signal, and CLI JSON shapes | Add new fixture cases only when a real contract risk appears |
-| PI cockpit | Functional v1 foundation | PI smoke tests cover read-only tools, and `penpal_ingest` is disabled by default with operator approval | Improve docs/examples before adding more PI surface area |
+| PI cockpit | Release candidate ready | PI smoke tests cover read-only tools, `penpal_ingest` is disabled by default with operator approval, and project-local PI package loading works without `-e` | Keep PI surface read-only by default through release |
 | Evaluation corpus | Active now | Demo fixtures and source-backed eval cases assert expected IDs, types, masking, suggestion order, reviewed source facts, and safety assertions | Add the next service-chain eval only after this one stays stable |
 | Community playbooks | Active now | Validator, examples, template, docs, source facts, and tests prove reviewed material stays cited before promotion | Improve contributor authoring errors and review guidance |
 | MCP portability | Queued | `docs/MCP_ADAPTER.md` defines the safe read-only plan | Build only after contracts/evals are stable enough to preserve |
-| Public v1 | Queued | `docs/V1_RELEASE_CHECKLIST.md` tracks ship/no-ship gates | Work down the checklist after contributor flow is solid |
+| Public v1 | Release prep | `docs/V1_RELEASE_CHECKLIST.md` and `docs/RELEASE_NOTES.md` track ship/no-ship gates and the `v0.1.0` release candidate | Smoke the release archive before tagging |
 | Post-v1 automation | Deferred | Roadmap lists scope, audit log, review workflow, and approved mutating actions | Start after public v1 |
 | Later harnesses | Deferred | Harness strategy defers Hermes/OpenClaw | Revisit only after schemas, evals, and approval gates are stable |
 
