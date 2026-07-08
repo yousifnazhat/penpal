@@ -1,0 +1,15 @@
+{
+  "name": "penpal-pi",
+  "version": "0.0.0",
+  "private": true,
+  "description": "PenPal PI cockpit package.",
+  "license": "MIT",
+  "keywords": ["pi-package"],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "typebox": "*"
+  },
+  "pi": {
+    "extensions": ["./examples/pi/penpal-extension.example.ts"]
+  }
+}

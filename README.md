@@ -62,14 +62,9 @@ PI is the intended conversational layer for v1. After creating demo data, instal
 ```bash
 ./scripts/setup-pi.sh
 pi
-/login
 ```
 
-```bash
-export PENPAL_CWD="$PWD"
-export PENPAL_WORKSPACE=penpal-workspace
-pi -e ./examples/pi/penpal-extension.example.ts
-```
+Run `/login` inside PI if it asks for a provider login. On first launch, approve the project-local files when PI prompts; `.pi/settings.json` loads the PenPal PI package from this repository.
 
 The setup script installs PI globally through npm as `@earendil-works/pi-coding-agent` when the `pi` command is missing. It never handles provider tokens or API keys. The PI extension reads the same masked PenPal context and suggestions as the CLI. Forced-tool smoke tests live in [PI Example](examples/pi/README.md).
 
