@@ -54,13 +54,7 @@ pi
 /login
 ```
 
-```bash
-export PENPAL_CWD=/path/to/penpal
-export PENPAL_WORKSPACE=penpal-workspace
-pi -e ./examples/pi/penpal-extension.example.ts
-```
-
-Do not commit provider tokens or API keys. PI stores OAuth/API-key auth outside this repository.
+PenPal ships a project-local PI package setting in `.pi/settings.json`, so running `pi` from the repository root loads the PenPal extension after you approve project-local files. Do not commit provider tokens or API keys. PI stores OAuth/API-key auth outside this repository.
 
 Keep mutating tools disabled unless the operator approval flow is enabled and tested.
 

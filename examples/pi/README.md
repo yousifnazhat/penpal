@@ -17,14 +17,11 @@ From the repository root, install or verify PI:
 ```bash
 ./scripts/setup-pi.sh
 pi
-/login
 ```
 
-```bash
-export PENPAL_CWD=/path/to/penpal
-export PENPAL_WORKSPACE=penpal-workspace
-pi -e ./examples/pi/penpal-extension.example.ts
-```
+Run `/login` inside PI if no provider is configured, and approve project-local files when PI prompts.
+
+The repository `.pi/settings.json` loads the PenPal PI package automatically from the repo root. The explicit `-e ./examples/pi/penpal-extension.example.ts` form below remains useful for forced-tool smoke tests.
 
 If `pi --list-models` says no models are available, finish `/login` before testing the extension.
 

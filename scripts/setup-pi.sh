@@ -28,7 +28,7 @@ Next:
   /login
 
 Then from this repository:
-  export PENPAL_CWD="$PWD"
-  export PENPAL_WORKSPACE=penpal-workspace
-  pi -e ./examples/pi/penpal-extension.example.ts
+  pi
+
+Approve project-local files if PI asks, then run /login if a provider is not configured.
 EOF

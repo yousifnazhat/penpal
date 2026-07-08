@@ -1,10 +1,13 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { execFile } from "node:child_process";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { Type } from "typebox";
 
 const execFileAsync = promisify(execFile);
-const cwd = process.env.PENPAL_CWD ?? process.cwd();
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const cwd = process.env.PENPAL_CWD ?? packageRoot;
 const python = process.env.PENPAL_PYTHON ?? "python3";
 const workspace = process.env.PENPAL_WORKSPACE;
 const maxIngestBytes = 200_000;
