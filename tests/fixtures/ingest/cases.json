@@ -1,0 +1,62 @@
+{
+  "schema": "penpal-ingest-fixtures-v1",
+  "cases": [
+    {
+      "id": "feroxbuster-urls-and-paths",
+      "fixture": "feroxbuster.txt",
+      "source": "feroxbuster",
+      "service_key": "tcp/443",
+      "expected": [
+        ["url", "https://portal.example.local/admin"],
+        ["web_path", "/admin"],
+        ["web_path", "/backup.zip"]
+      ],
+      "forbidden": [
+        ["web_path", "/portal.example.local/admin"],
+        ["web_path", "/portal.example.local/backup.zip"],
+        ["hostname", "backup.zip"]
+      ]
+    },
+    {
+      "id": "nmap-grepable-services",
+      "fixture": "nmap-grepable.txt",
+      "source": "nmap-grep",
+      "service_key": "",
+      "expected": [
+        ["hostname", "app01.example.local"],
+        ["ip", "10.10.10.5"],
+        ["service_hint", "tcp/80 http"],
+        ["service_hint", "tcp/445 microsoft-ds"]
+      ],
+      "forbidden": []
+    },
+    {
+      "id": "snmpwalk-identities-and-credential-candidate",
+      "fixture": "snmpwalk.txt",
+      "source": "snmpwalk",
+      "service_key": "udp/161",
+      "expected": [
+        ["hostname", "mail01.example.local"],
+        ["email", "ops@example.local"],
+        ["username", "daniel"],
+        ["credential_candidate", "Winter2024!"]
+      ],
+      "forbidden": []
+    },
+    {
+      "id": "configuration-noise",
+      "fixture": "configuration-noise.txt",
+      "source": "manual-review",
+      "service_key": "",
+      "expected": [
+        ["url", "https://cdn.example.local/assets/app.js"],
+        ["web_path", "/assets/app.js"]
+      ],
+      "forbidden": [
+        ["credential_candidate", "12"],
+        ["hostname", "app.js"],
+        ["web_path", "/cdn.example.local/assets/app.js"]
+      ]
+    }
+  ]
+}

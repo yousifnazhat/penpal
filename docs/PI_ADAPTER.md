@@ -98,6 +98,6 @@ PI should not:
 }
 ```
 
-Keep the first PI integration this boring. If the context contract becomes too slow or too large, add filters later.
+Keep the first PI integration this boring. If the context contract becomes too slow or too large, add filters later. See the [PI package distribution plan](PI_PACKAGE_DISTRIBUTION.md) before considering npm publication.
 
 See `examples/pi/` for a read-only PI extension sketch.

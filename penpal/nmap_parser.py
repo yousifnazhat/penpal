@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -34,10 +34,7 @@ def parse_nmap_xml(path: str | Path, include_states: set[str] | None = None) -> 
                 continue
 
             service_node = port_node.find("service")
-            scripts = {
-                script.get("id", "script"): script.get("output", "")
-                for script in port_node.findall("script")
-            }
+            scripts = {script.get("id", "script"): script.get("output", "") for script in port_node.findall("script")}
             services.append(
                 Service(
                     port=int(port_node.get("portid", "0")),
@@ -59,4 +56,3 @@ def _attr(node: ET.Element | None, name: str) -> str:
     if node is None:
         return ""
     return node.get(name, "")
-

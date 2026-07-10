@@ -9,6 +9,8 @@ PenPal is an authorized enumeration assistant. Contributions should make evidenc
 - Improve deterministic suggestions in `penpal/advisor.py`.
 - Improve docs that help operators understand why a path is suggested.
 
+When changing ingest behavior, add realistic raw output and expected/forbidden evidence pairs under `tests/fixtures/ingest/`. This keeps false-positive regressions visible.
+
 ## Community playbooks
 
 Playbooks are JSON files using `schema: "penpal-playbook-v1"`. Copy the fenced JSON from `playbooks/TEMPLATE.md` into a new `playbooks/<your-playbook-id>.json`, then edit the fields. See `playbooks/README.md` for authoring guidance and the supported signal/action fields.
@@ -25,9 +27,9 @@ Required fields:
 Validate playbooks before opening a PR:
 
 ```bash
-python -m penpal playbooks playbooks
-python -m penpal playbooks playbooks --show snmp-mail-remote
-python -m unittest discover -v
+python3 -m pip install ".[dev]"
+make check
+python3 -m penpal playbooks playbooks --show snmp-mail-remote
 ```
 
 ## Safety boundary

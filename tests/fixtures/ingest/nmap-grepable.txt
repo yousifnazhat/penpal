@@ -1,0 +1,5 @@
+Nmap scan report for app01.example.local (10.10.10.5)
+Host is up (0.021s latency).
+PORT    STATE SERVICE
+80/tcp  open  http
+445/tcp open  microsoft-ds

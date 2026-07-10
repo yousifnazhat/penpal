@@ -1,8 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import hashlib
 import re
 from dataclasses import dataclass
+from urllib.parse import urlsplit
 
 from .models import Evidence
 
@@ -11,7 +12,7 @@ EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
 URL_RE = re.compile(r"\bhttps?://[^\s'\"<>]+", re.IGNORECASE)
 IP_RE = re.compile(r"\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b")
 HOSTNAME_RE = re.compile(r"\b(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,}\b")
-WEB_PATH_RE = re.compile(r"(?<!\w)/(?:[A-Za-z0-9._~!$&'()*+,;=:@%-]+/?)+" )
+WEB_PATH_RE = re.compile(r"(?<![\w:/])/(?:[A-Za-z0-9._~!$&'()*+,;=:@%-]+/?)+")
 NMAP_PORT_RE = re.compile(
     r"^(?P<port>\d{1,5})/(?P<proto>tcp|udp)\s+(?P<state>open|filtered|open\|filtered)\s+(?P<service>[A-Za-z0-9_.-]+)",
     re.IGNORECASE,
@@ -94,16 +95,41 @@ def extract_evidence(
         for value in URL_RE.findall(line):
             cleaned = value.rstrip(".,;)")
             _add(found, seen, existing_ids, "url", cleaned, source, service_key, line, "high", line_no)
+            path = urlsplit(cleaned).path
+            if path and path != "/":
+                _add(found, seen, existing_ids, "web_path", path, source, service_key, line, "medium", line_no)
 
         for value in DOMAIN_USER_RE.findall(line):
             _add(found, seen, existing_ids, "username", value, source, service_key, line, "medium", line_no)
 
         passwd_match = PASSWD_RE.search(line)
         if passwd_match:
-            _add(found, seen, existing_ids, "username", passwd_match.group("value"), source, service_key, line, "high", line_no)
+            _add(
+                found,
+                seen,
+                existing_ids,
+                "username",
+                passwd_match.group("value"),
+                source,
+                service_key,
+                line,
+                "high",
+                line_no,
+            )
 
         for match in USER_KV_RE.finditer(line):
-            _add(found, seen, existing_ids, "username", match.group("value"), source, service_key, line, "medium", line_no)
+            _add(
+                found,
+                seen,
+                existing_ids,
+                "username",
+                match.group("value"),
+                source,
+                service_key,
+                line,
+                "medium",
+                line_no,
+            )
 
         for match in PASSWORD_KV_RE.finditer(line):
             _add(
@@ -141,7 +167,18 @@ def extract_evidence(
         if looks_like_web_finding(line):
             for value in WEB_PATH_RE.findall(line):
                 if len(value) > 1 and not value.startswith("//"):
-                    _add(found, seen, existing_ids, "web_path", value.rstrip(".,;"), source, service_key, line, "medium", line_no)
+                    _add(
+                        found,
+                        seen,
+                        existing_ids,
+                        "web_path",
+                        value.rstrip(".,;"),
+                        source,
+                        service_key,
+                        line,
+                        "medium",
+                        line_no,
+                    )
 
     ignored = sum(1 for item in found if item.id in existing_ids)
     fresh = [item for item in found if item.id not in existing_ids]
@@ -150,7 +187,9 @@ def extract_evidence(
 
 def looks_like_web_finding(line: str) -> bool:
     lowered = line.lower()
-    return any(token in lowered for token in ["status:", "code:", "http", "found", "redirect", "title", "words:", "size:"])
+    return any(
+        token in lowered for token in ["status:", "code:", "http", "found", "redirect", "title", "words:", "size:"]
+    )
 
 
 def evidence_id(evidence_type: str, value: str, source: str, service_key: str) -> str:

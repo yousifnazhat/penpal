@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 import re
@@ -61,7 +61,9 @@ def build_suggestions(
 
     has_snmp = 161 in service_ports or "snmp" in service_names
     has_mail = bool(service_ports & MAIL_PORTS) or bool(service_names & {"imap", "pop3", "imaps", "pop3s"})
-    has_remote = bool(service_ports & REMOTE_ACCESS_PORTS) or bool(service_names & {"ssh", "rdp", "ms-wbt-server", "winrm", "microsoft-ds"})
+    has_remote = bool(service_ports & REMOTE_ACCESS_PORTS) or bool(
+        service_names & {"ssh", "rdp", "ms-wbt-server", "winrm", "microsoft-ds"}
+    )
     usernames = evidence_by_type.get("username", [])
     credential_candidates = evidence_by_type.get("credential_candidate", [])
     hostnames = evidence_by_type.get("hostname", []) + evidence_by_type.get("domain", [])
@@ -138,7 +140,9 @@ def build_suggestions(
         )
 
     if hostnames and _has_web(services):
-        domain = _parameter_value(parameters, "domain", _first_value(evidence_by_type.get("domain", []), "<domain>"), reveal_secrets)
+        domain = _parameter_value(
+            parameters, "domain", _first_value(evidence_by_type.get("domain", []), "<domain>"), reveal_secrets
+        )
         suggestions.append(
             Suggestion(
                 id="hostnames_to_vhosts",
@@ -155,7 +159,7 @@ def build_suggestions(
                     "Ingest web discovery output so hidden apps become evidence.",
                 ],
                 command_examples=[
-                    f"ffuf -u http://{target_host}/ -H \"Host: FUZZ.{domain}\" -w <wordlist> -mc all -fs <baseline_size>",
+                    f'ffuf -u http://{target_host}/ -H "Host: FUZZ.{domain}" -w <wordlist> -mc all -fs <baseline_size>',
                     f"feroxbuster -u http://{domain}/ -w <wordlist> -o .\\penpal-workspace\\targets\\{target_name}\\web\\ferox-{domain}.txt",
                     f"python -m penpal ingest {target_name} --file .\\vhosts.txt --source ffuf --service tcp/80",
                 ],
@@ -200,7 +204,7 @@ def build_suggestions(
                     "Feed any confirmed facts back into the evidence store.",
                 ],
                 command_examples=[
-                    "grep -RniE \"pass|user|cred|key|token|secret\" loot/",
+                    'grep -RniE "pass|user|cred|key|token|secret" loot/',
                     "Get-ChildItem .\\loot -Recurse -File | Select-String -Pattern 'pass|user|cred|key|token|secret'",
                     f"python -m penpal ingest {target_name} --file .\\loot-review.txt --source loot-review",
                 ],
@@ -287,7 +291,9 @@ def _match_playbook_signal(
 
 def _match_service_signal(signal: dict[str, Any], services: list[Service]) -> list[str]:
     ports = {signal["port"]} if "port" in signal else set(signal.get("ports", []))
-    names = {str(signal["name"]).lower()} if "name" in signal else {str(name).lower() for name in signal.get("names", [])}
+    names = (
+        {str(signal["name"]).lower()} if "name" in signal else {str(name).lower() for name in signal.get("names", [])}
+    )
     protocol = str(signal.get("protocol", "")).lower()
     facts: list[str] = []
     for service in services:
@@ -325,31 +331,31 @@ def _mail_command_examples(services: list[Service], target_host: str) -> list[st
         commands.extend(
             [
                 f"nc -nv {target_host} 143",
-                f"curl --url \"imap://{target_host}:143/INBOX\" --user \"<known_user>:<known_password>\" --verbose",
+                f'curl --url "imap://{target_host}:143/INBOX" --user "<known_user>:<known_password>" --verbose',
             ]
         )
     if 993 in ports:
         commands.extend(
             [
                 f"openssl s_client -connect {target_host}:993 -crlf",
-                f"curl --url \"imaps://{target_host}:993/INBOX\" --user \"<known_user>:<known_password>\" --verbose --insecure",
+                f'curl --url "imaps://{target_host}:993/INBOX" --user "<known_user>:<known_password>" --verbose --insecure',
             ]
         )
     if 110 in ports:
         commands.extend(
             [
                 f"nc -nv {target_host} 110",
-                f"curl --url \"pop3://{target_host}:110\" --user \"<known_user>:<known_password>\" --verbose",
+                f'curl --url "pop3://{target_host}:110" --user "<known_user>:<known_password>" --verbose',
             ]
         )
     if 995 in ports:
         commands.extend(
             [
                 f"openssl s_client -connect {target_host}:995 -crlf",
-                f"curl --url \"pop3s://{target_host}:995\" --user \"<known_user>:<known_password>\" --verbose --insecure",
+                f'curl --url "pop3s://{target_host}:995" --user "<known_user>:<known_password>" --verbose --insecure',
             ]
         )
-    return commands or [f"curl --url \"imap://{target_host}:143/INBOX\" --user \"<known_user>:<known_password>\" --verbose"]
+    return commands or [f'curl --url "imap://{target_host}:143/INBOX" --user "<known_user>:<known_password>" --verbose']
 
 
 def _remote_access_command_examples(services: list[Service], target_host: str) -> list[str]:
@@ -374,7 +380,9 @@ def _remote_access_command_examples(services: list[Service], target_host: str) -
 
 
 def _web_path_command_examples(services: list[Service], paths: list[Evidence], target_host: str) -> list[str]:
-    web_service = next((service for service in services if service.port in WEB_PORTS or "http" in service.name.lower()), None)
+    web_service = next(
+        (service for service in services if service.port in WEB_PORTS or "http" in service.name.lower()), None
+    )
     port = web_service.port if web_service else 80
     scheme = "https" if port in {443, 8443} or (web_service and web_service.tunnel == "ssl") else "http"
     path = _first_value(paths, "/<path>")
@@ -433,8 +441,7 @@ def _render_suggestion_parameters(
     defaults = defaults or {}
     for suggestion in suggestions:
         suggestion.command_examples = [
-            _render_command(command, parameters, reveal_secrets, defaults)
-            for command in suggestion.command_examples
+            _render_command(command, parameters, reveal_secrets, defaults) for command in suggestion.command_examples
         ]
     return suggestions
 

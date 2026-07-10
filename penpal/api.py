@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 from http import HTTPStatus
@@ -12,6 +12,10 @@ from .ingest import extract_evidence
 from .nmap_parser import parse_nmap_xml
 from .summary import render_summary
 from .workspace import Workspace, WorkspaceError
+
+
+class ApiRequestError(ValueError):
+    pass
 
 
 def serve(workspace: Workspace, host: str = "127.0.0.1", port: int = 8765) -> None:
@@ -39,8 +43,9 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     services = workspace.load_services(path[2])
                     self._json({"services": [service.to_dict() for service in services]})
                 elif len(path) == 4 and path[:2] == ["api", "targets"] and path[3] == "evidence":
+                    reveal = _query_bool(self.path, "reveal_secrets")
                     evidence = workspace.load_evidence(path[2])
-                    self._json({"evidence": [item.to_dict() for item in evidence]})
+                    self._json({"evidence": [item.to_dict(reveal=reveal) for item in evidence]})
                 elif len(path) == 4 and path[:2] == ["api", "targets"] and path[3] == "parameters":
                     workspace.require_target(path[2])
                     reveal = _query_bool(self.path, "reveal_secrets")
@@ -58,7 +63,9 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     )
                     self._json({"suggestions": [suggestion.to_dict() for suggestion in suggestions]})
                 elif len(path) == 4 and path[:2] == ["api", "targets"] and path[3] == "context":
-                    self._json(build_context(workspace, path[2], reveal_secrets=_query_bool(self.path, "reveal_secrets")))
+                    self._json(
+                        build_context(workspace, path[2], reveal_secrets=_query_bool(self.path, "reveal_secrets"))
+                    )
                 elif len(path) == 4 and path[:2] == ["api", "targets"] and path[3] == "summary":
                     target = workspace.require_target(path[2])
                     services = workspace.load_services(path[2])
@@ -88,9 +95,9 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     self._json({"services": [service.to_dict() for service in services]})
                 elif len(path) == 4 and path[:2] == ["api", "targets"] and path[3] == "ingest":
                     target = workspace.require_target(path[2])
-                    text = str(body.get("text", ""))
                     if body.get("path"):
-                        text = Path(str(body["path"])).read_text(encoding="utf-8")
+                        raise ApiRequestError("body.path is not supported; send tool output in body.text")
+                    text = str(body.get("text", ""))
                     existing_ids = {item.id for item in workspace.load_evidence(path[2])}
                     result = extract_evidence(
                         text,
@@ -109,7 +116,9 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     )
                     self._json(
                         {
-                            "added": [item.to_dict() for item in result.evidence],
+                            "added": [
+                                item.to_dict(reveal=bool(body.get("reveal_secrets", False))) for item in result.evidence
+                            ],
                             "ignored_duplicates": result.ignored_duplicates,
                             "suggestions": [suggestion.to_dict() for suggestion in suggestions],
                         }
@@ -128,6 +137,8 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     self._json({"error": "not found"}, HTTPStatus.NOT_FOUND)
             except WorkspaceError as exc:
                 self._json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
+            except ApiRequestError as exc:
+                self._json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
             except KeyError as exc:
                 self._json({"error": f"missing field: {exc}"}, HTTPStatus.BAD_REQUEST)
             except Exception as exc:
@@ -141,14 +152,16 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
             if length == 0:
                 return {}
             raw = self.rfile.read(length).decode("utf-8")
-            return json.loads(raw)
+            body = json.loads(raw)
+            if not isinstance(body, dict):
+                raise ApiRequestError("expected JSON object")
+            return body
 
         def _json(self, payload: dict[str, object], status: HTTPStatus = HTTPStatus.OK) -> None:
             encoded = json.dumps(payload, indent=2).encode("utf-8")
             self.send_response(status.value)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(encoded)))
-            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(encoded)
 

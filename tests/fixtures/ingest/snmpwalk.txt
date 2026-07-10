@@ -1,0 +1,4 @@
+SNMPv2-MIB::sysName.0 = STRING: mail01.example.local
+SNMPv2-MIB::sysContact.0 = STRING: ops@example.local
+User: daniel
+password=Winter2024!

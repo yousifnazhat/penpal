@@ -158,7 +158,9 @@ def scan_playbooks(path: str | Path) -> PlaybookScanReport:
         try:
             data = json.loads(playbook_path.read_text(encoding="utf-8-sig"))
         except json.JSONDecodeError as exc:
-            report.playbooks.append(PlaybookFile(path=relative_path, error=_authoring_error(f"invalid JSON: {exc.msg}")))
+            report.playbooks.append(
+                PlaybookFile(path=relative_path, error=_authoring_error(f"invalid JSON: {exc.msg}"))
+            )
             continue
 
         error = _authoring_error(validate_playbook(data))
@@ -300,18 +302,12 @@ def extract_penpal_blocks(text: str, relative_path: str) -> list[PenpalBlock]:
 
 
 def _markdown_files(vault_path: Path) -> list[Path]:
-    return sorted(
-        path
-        for path in vault_path.rglob("*.md")
-        if ".obsidian" not in path.relative_to(vault_path).parts
-    )
+    return sorted(path for path in vault_path.rglob("*.md") if ".obsidian" not in path.relative_to(vault_path).parts)
 
 
 def _json_files(root: Path) -> list[Path]:
     return sorted(
-        path
-        for path in root.rglob("*.json")
-        if not any(part.startswith(".") for part in path.relative_to(root).parts)
+        path for path in root.rglob("*.json") if not any(part.startswith(".") for part in path.relative_to(root).parts)
     )
 
 

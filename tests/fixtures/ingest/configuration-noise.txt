@@ -1,0 +1,3 @@
+Fetched https://cdn.example.local/assets/app.js
+Password policy: at least 12 characters.
+password-length=12

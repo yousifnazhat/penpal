@@ -1,7 +1,9 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -97,6 +99,7 @@ class Workspace:
         return [Service.from_dict(item) for item in data.get("services", [])]
 
     def save_services(self, name: str, services: list[Service]) -> None:
+        target = self.require_target(name)
         ordered = sorted(services, key=lambda svc: (svc.protocol, svc.port))
         write_json(
             self.services_path(name),
@@ -105,7 +108,6 @@ class Workspace:
                 "services": [service.to_dict() for service in ordered],
             },
         )
-        target = self.require_target(name)
         self.save_target(target)
 
     def merge_services(self, name: str, parsed: list[Service]) -> list[Service]:
@@ -127,6 +129,7 @@ class Workspace:
         return [Evidence.from_dict(item) for item in data.get("evidence", [])]
 
     def save_evidence(self, name: str, evidence: list[Evidence]) -> None:
+        target = self.require_target(name)
         ordered = sorted(evidence, key=lambda item: (item.created_at, item.type, item.value))
         write_json(
             self.evidence_path(name),
@@ -135,7 +138,6 @@ class Workspace:
                 "evidence": [item.to_dict() for item in ordered],
             },
         )
-        target = self.require_target(name)
         self.save_target(target)
 
     def append_evidence(self, name: str, evidence: list[Evidence]) -> list[Evidence]:
@@ -154,12 +156,10 @@ class Workspace:
         if not path.exists():
             return {}
         data = read_json(path)
-        return {
-            item["name"]: Parameter.from_dict(item)
-            for item in data.get("parameters", [])
-        }
+        return {item["name"]: Parameter.from_dict(item) for item in data.get("parameters", [])}
 
     def save_parameters(self, name: str, parameters: dict[str, Parameter]) -> None:
+        target = self.require_target(name)
         ordered = sorted(parameters.values(), key=lambda item: item.name)
         write_json(
             self.parameters_path(name),
@@ -168,7 +168,6 @@ class Workspace:
                 "parameters": [item.to_dict(reveal=True) for item in ordered],
             },
         )
-        target = self.require_target(name)
         self.save_target(target)
 
     def set_parameter(
@@ -203,12 +202,12 @@ class Workspace:
 
     def append_job(self, name: str, job: dict[str, Any]) -> Path:
         target = self.require_target(name)
-        job_id = str(job.get("id") or utc_now().replace(":", "").replace("+", "Z"))
+        job_id = safe_target_name(str(job.get("id") or utc_now().replace(":", "").replace("+", "Z")))
         job["id"] = job_id
         job["target"] = target.name
         job["host"] = target.host
         job["created_at"] = job.get("created_at") or utc_now()
-        path = self.target_path(name) / "jobs" / f"{safe_target_name(job_id)}.json"
+        path = self.target_path(name) / "jobs" / f"{job_id}.json"
         write_json(path, job)
         return path
 
@@ -219,4 +218,17 @@ def read_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    payload = json.dumps(data, indent=2, sort_keys=True) + "\n"
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+        text=True,
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(payload)
+        os.replace(temporary_path, path)
+    finally:
+        temporary_path.unlink(missing_ok=True)

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import os
 import subprocess
@@ -85,4 +85,3 @@ def _build_nmap_command(
 def _ports_arg(services: list[Service], protocol: str) -> str:
     ports = sorted({service.port for service in services if service.protocol == protocol})
     return ",".join(str(port) for port in ports)
-
