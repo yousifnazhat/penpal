@@ -16,6 +16,12 @@ Do not change these casually. If a contract changes, update the contract fixture
 | Masked context output | `build_context(..., reveal_secrets=False)` | all default harness reads | `tests/test_contracts.py` |
 | PI smoke commands | `examples/pi/README.md` | maintainers and contributors | manual pre-release smoke |
 
+## Workspace storage
+
+New workspace JSON files carry explicit `penpal-*-v1` storage schemas. Files created before schema markers were introduced remain readable and gain the current schema on their next write. PenPal rejects unknown schema versions instead of guessing how to interpret them.
+
+Compound updates are serialized within one `Workspace` instance, including the threaded local API. Multiple PenPal processes must not write to the same workspace concurrently.
+
 ## Change rule
 
 A contract PR should answer:
