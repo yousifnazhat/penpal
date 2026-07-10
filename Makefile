@@ -2,7 +2,8 @@ PYTHON ?= python3
 
 .PHONY: check demo format lint playbooks test
 
-check: lint format test playbooks
+check:
+	$(PYTHON) scripts/check.py
 
 demo:
 	$(PYTHON) -m penpal --workspace penpal-workspace init 10.10.10.5 --name demo --force
