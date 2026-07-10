@@ -39,6 +39,7 @@ If the answer is unclear, keep the current contract.
 - Default harness reads are masked.
 - Evidence reads and ingest responses mask credential-like values unless the operator explicitly requests revelation.
 - The local API accepts pasted `body.text`, never arbitrary local file paths, and does not enable browser cross-origin access.
+- The API defaults to loopback-only binding, caps JSON request bodies at 1 MiB, and does not expose internal exception details in `500` responses.
 - Suggestions cite stored services, evidence, or playbook `matched_signals`.
 - Commands stay visible to the operator.
 - Mutating tools require operator approval.

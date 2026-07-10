@@ -67,6 +67,12 @@ Keep mutating tools disabled unless the operator approval flow is enabled and te
 
 See `examples/pi/README.md` for forced-tool smoke tests that verify PI is using the PenPal extension.
 
+## Local API safety
+
+The JSON API binds to `127.0.0.1` by default and rejects non-loopback addresses. Request bodies are capped at 1 MiB, malformed bodies receive client errors, and sensitive values remain masked unless revelation is explicitly requested.
+
+The `--allow-remote` flag overrides the bind guard for an isolated, trusted network. The API has no authentication or TLS, and remote clients can explicitly request unmasked values, so do not expose it to an untrusted LAN or the public internet.
+
 ## Not needed for v1
 
 - C2 accounts

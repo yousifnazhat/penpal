@@ -169,7 +169,9 @@ Scan execution is opt-in. Without `--execute`, `scan` prints the commands it wou
 
 ## API
 
-The API is intentionally small and local-only. It accepts pasted tool output in `body.text`; use the CLI for local file ingestion. Browser cross-origin access is disabled, and credential-like evidence is masked unless `reveal_secrets=true` is explicitly requested.
+The API is intentionally small and local-first. It accepts JSON request bodies up to 1 MiB and pasted tool output in `body.text`; use the CLI for local file ingestion. Browser cross-origin access is disabled, responses are not cacheable, and credential-like evidence is masked unless `reveal_secrets=true` is explicitly requested.
+
+PenPal refuses non-loopback bind addresses by default. `--allow-remote` is an explicit override for isolated, trusted networks only: the API does not provide authentication or TLS, and remote clients can explicitly request unmasked values.
 
 - `GET /api/health`
 - `GET /api/targets`
