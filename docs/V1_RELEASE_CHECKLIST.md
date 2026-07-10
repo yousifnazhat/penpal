@@ -1,6 +1,6 @@
 # v1 Release Checklist
 
-Use this before cutting the first public contributor-ready PenPal release.
+Use this before cutting a public contributor-ready PenPal prerelease.
 
 ## Required
 
@@ -11,7 +11,7 @@ Use this before cutting the first public contributor-ready PenPal release.
 - [x] Downloaded repo includes a one-command PI install/verify bootstrap.
 - [x] Fresh public clone PI cockpit smoke passes.
 - [x] Project-local PI package loads the PenPal extension without an explicit `-e` flag.
-- [x] `docs/RELEASE_NOTES.md` describes the `v0.1.0` release candidate.
+- [x] `docs/RELEASE_NOTES.md` describes the current release candidate.
 - [x] GitHub archive smoke passes for the `v0.1.0` release-candidate commit.
 - [x] GitHub `v0.1.0` prerelease is published and release tarball contains the PI onboarding files.
 - [x] `LICENSE`, `CONTRIBUTING.md`, and `SECURITY.md` are present.
@@ -29,10 +29,11 @@ Use this before cutting the first public contributor-ready PenPal release.
 
 ## Current Evidence
 
-Last local verification: 2026-07-08.
+Last local verification: 2026-07-10.
 
-- `python3 -m unittest discover -v`: 43 tests passed.
+- `make check`: Ruff lint/format passed, 53 tests passed, and 4 playbooks validated.
 - `python3 -m penpal playbooks playbooks`: 4 valid playbooks, 0 invalid.
+- GitHub CI passed on Python 3.11 for merge commit `a5a68f9`.
 - `./scripts/setup-pi.sh`: verified the local PI command and printed the PenPal extension launch path.
 - README quick start passed from a fresh worktree copy with a new workspace.
 - Fresh public clone smoke passed: `./scripts/setup-pi.sh`, demo target creation, Nmap parse, evidence ingest, PI forced `penpal_context`, and PI forced `penpal_module_plan`.
@@ -48,9 +49,9 @@ Local note: this workstation exposes `python3` as Python 3.9.6 and has no `pytho
 
 ## Release
 
-- Package version: `0.1.0`
-- Tag: `v0.1.0`
-- GitHub Release: https://github.com/yousifnazhat/penpal/releases/tag/v0.1.0
+- Package version: `0.1.1rc1`
+- Tag: `v0.1.1-rc.1`
+- GitHub Release: https://github.com/yousifnazhat/penpal/releases/tag/v0.1.1-rc.1
 - Release notes: [Release Notes](RELEASE_NOTES.md)
 - Next step: collect onboarding friction before expanding distribution or adapter surfaces.
 
