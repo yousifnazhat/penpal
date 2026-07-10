@@ -1,3 +1,4 @@
+from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 import json
 from pathlib import Path
@@ -7,13 +8,122 @@ import unittest
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from penpal.api import make_handler
+from penpal.api import MAX_REQUEST_BODY_BYTES, _is_loopback_host, make_handler, serve
 from penpal.ingest import extract_evidence
 from penpal.models import Service
 from penpal.workspace import Workspace
 
 
 class ApiTests(unittest.TestCase):
+    def test_unknown_targets_return_404(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            server, thread = _start_server(Workspace(temp_dir))
+            try:
+                status, _, payload = _raw_request(server, "GET", "/api/targets/missing", b"", {})
+            finally:
+                _stop_server(server, thread)
+
+        self.assertEqual(status, 404)
+        self.assertEqual(payload["error"], "Unknown target: missing")
+
+    def test_response_headers_disable_caching_and_hide_runtime_version(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            server, thread = _start_server(Workspace(temp_dir))
+            try:
+                status, headers, _ = _raw_request(server, "GET", "/api/health", b"", {})
+            finally:
+                _stop_server(server, thread)
+
+        self.assertEqual(status, 200)
+        self.assertEqual(headers["Cache-Control"], "no-store")
+        self.assertEqual(headers["X-Content-Type-Options"], "nosniff")
+        self.assertEqual(headers["Server"], "PenPal/0.1")
+
+    def test_internal_errors_do_not_leak_exception_details(self) -> None:
+        class FailingWorkspace(Workspace):
+            def list_targets(self):
+                raise RuntimeError("private filesystem detail")
+
+        with TemporaryDirectory() as temp_dir:
+            server, thread = _start_server(FailingWorkspace(temp_dir))
+            try:
+                with self.assertLogs("penpal.api", level="ERROR"):
+                    status, _, payload = _raw_request(server, "GET", "/api/targets", b"", {})
+            finally:
+                _stop_server(server, thread)
+
+        self.assertEqual(status, 500)
+        self.assertEqual(payload["error"], "internal server error")
+        self.assertNotIn("private filesystem detail", json.dumps(payload))
+
+    def test_request_body_errors_return_specific_client_statuses(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            server, thread = _start_server(workspace)
+            try:
+                cases = [
+                    (b"{", {}, 400, "request body must contain valid JSON"),
+                    (b"[]", {}, 400, "expected JSON object"),
+                    (b"\xff", {}, 400, "request body must be UTF-8"),
+                    (b"{}", {"Content-Length": "invalid"}, 400, "Content-Length must be a non-negative integer"),
+                    (
+                        b"{}",
+                        {"Content-Length": str(MAX_REQUEST_BODY_BYTES + 1)},
+                        413,
+                        f"request body exceeds the {MAX_REQUEST_BODY_BYTES}-byte limit",
+                    ),
+                ]
+                for body, headers, expected_status, expected_error in cases:
+                    with self.subTest(expected_error=expected_error):
+                        status, _, payload = _raw_request(server, "POST", "/api/targets", body, headers)
+                        self.assertEqual(status, expected_status)
+                        self.assertEqual(payload["error"], expected_error)
+            finally:
+                _stop_server(server, thread)
+
+    def test_target_conflicts_return_409(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            workspace.create_target("10.10.10.5", name="chain")
+            server, thread = _start_server(workspace)
+            try:
+                status, _, payload = _post_json(
+                    f"http://127.0.0.1:{server.server_port}/api/targets",
+                    {"host": "10.10.10.5", "name": "chain"},
+                    origin="https://example.invalid",
+                )
+            finally:
+                _stop_server(server, thread)
+
+        self.assertEqual(status, 409)
+        self.assertEqual(payload["error"], "Target already exists: chain")
+
+    def test_request_fields_are_type_checked_instead_of_coerced(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            server, thread = _start_server(Workspace(temp_dir))
+            try:
+                status, _, payload = _post_json(
+                    f"http://127.0.0.1:{server.server_port}/api/targets",
+                    {"host": "10.10.10.5", "force": "false"},
+                    origin="https://example.invalid",
+                )
+            finally:
+                _stop_server(server, thread)
+
+        self.assertEqual(status, 400)
+        self.assertEqual(payload["error"], "field force must be a boolean")
+
+    def test_api_bind_defaults_to_loopback_only(self) -> None:
+        self.assertTrue(_is_loopback_host("127.0.0.1"))
+        self.assertTrue(_is_loopback_host("::1"))
+        self.assertTrue(_is_loopback_host("localhost"))
+        self.assertFalse(_is_loopback_host("0.0.0.0"))
+        self.assertFalse(_is_loopback_host("192.0.2.10"))
+
+        with TemporaryDirectory() as temp_dir:
+            with self.assertRaisesRegex(ValueError, "refusing to bind"):
+                serve(Workspace(temp_dir), host="0.0.0.0", port=0)
+
     def test_context_endpoint_masks_sensitive_values(self) -> None:
         with TemporaryDirectory() as temp_dir:
             workspace = Workspace(temp_dir)
@@ -130,6 +240,23 @@ def _start_server(workspace: Workspace) -> tuple[ThreadingHTTPServer, threading.
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return server, thread
+
+
+def _raw_request(
+    server: ThreadingHTTPServer,
+    method: str,
+    path: str,
+    body: bytes,
+    headers: dict[str, str],
+) -> tuple[int, object, dict[str, object]]:
+    connection = HTTPConnection("127.0.0.1", server.server_port, timeout=5)
+    request_headers = {"Content-Type": "application/json", "Connection": "close", **headers}
+    try:
+        connection.request(method, path, body=body, headers=request_headers)
+        response = connection.getresponse()
+        return response.status, response.headers, json.loads(response.read().decode("utf-8"))
+    finally:
+        connection.close()
 
 
 def _stop_server(server: ThreadingHTTPServer, thread: threading.Thread) -> None:

@@ -194,6 +194,11 @@ def build_parser() -> argparse.ArgumentParser:
     serve_cmd = subcommands.add_parser("serve", help="Start the JSON API for a future frontend.")
     serve_cmd.add_argument("--host", default="127.0.0.1")
     serve_cmd.add_argument("--port", type=int, default=8765)
+    serve_cmd.add_argument(
+        "--allow-remote",
+        action="store_true",
+        help="Allow an unauthenticated non-loopback bind on a trusted, isolated network.",
+    )
     serve_cmd.set_defaults(func=cmd_serve)
 
     return parser
@@ -596,7 +601,7 @@ def cmd_sources_reviewed(args: argparse.Namespace, workspace: Workspace) -> int:
 
 def cmd_serve(args: argparse.Namespace, workspace: Workspace) -> int:
     workspace.ensure()
-    serve(workspace, host=args.host, port=args.port)
+    serve(workspace, host=args.host, port=args.port, allow_remote=args.allow_remote)
     return 0
 
 

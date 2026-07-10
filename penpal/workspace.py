@@ -24,6 +24,14 @@ class WorkspaceError(RuntimeError):
     pass
 
 
+class TargetExistsError(WorkspaceError):
+    pass
+
+
+class TargetNotFoundError(WorkspaceError):
+    pass
+
+
 def safe_target_name(value: str) -> str:
     safe = SAFE_NAME_RE.sub("_", value.strip()).strip("._-")
     return safe or "target"
@@ -47,7 +55,7 @@ class Workspace:
             target_name = safe_target_name(name or host)
             target_dir = self.target_path(target_name)
             if target_dir.exists() and not force:
-                raise WorkspaceError(f"Target already exists: {target_name}")
+                raise TargetExistsError(f"Target already exists: {target_name}")
 
             for child in [
                 target_dir / "scans" / "nmap",
@@ -79,7 +87,7 @@ class Workspace:
     def require_target(self, name: str) -> Target:
         path = self.target_path(name) / "target.json"
         if not path.exists():
-            raise WorkspaceError(f"Unknown target: {name}")
+            raise TargetNotFoundError(f"Unknown target: {name}")
         return Target.from_dict(read_storage_json(path, TARGET_STORAGE_SCHEMA))
 
     def save_target(self, target: Target) -> None:
