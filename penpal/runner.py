@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import shutil
 import subprocess
@@ -63,6 +63,6 @@ def run_command(
             parsed = parse_nmap_xml(xml_path)
             workspace.merge_services(target_name, parsed)
             job["parsed_services"] = [service.to_dict() for service in parsed]
+            workspace.append_job(target_name, job)
 
     return job
-

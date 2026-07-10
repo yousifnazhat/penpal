@@ -80,6 +80,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     evidence_cmd = subcommands.add_parser("evidence", help="Show extracted evidence.")
     evidence_cmd.add_argument("name", help="Target name.")
+    evidence_cmd.add_argument("--reveal-secrets", action="store_true", help="Show sensitive evidence values.")
     evidence_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     evidence_cmd.set_defaults(func=cmd_evidence)
 
@@ -89,14 +90,18 @@ def build_parser() -> argparse.ArgumentParser:
     ingest_cmd.add_argument("--source", default="paste", help="Source label, such as snmpwalk or feroxbuster.")
     ingest_cmd.add_argument("--service", default="", help="Related service key, such as tcp/80 or udp/161.")
     ingest_cmd.add_argument("--playbooks", default="playbooks", help="Community playbook file or directory.")
-    ingest_cmd.add_argument("--reveal-secrets", action="store_true", help="Render sensitive parameters inside syntax examples.")
+    ingest_cmd.add_argument(
+        "--reveal-secrets", action="store_true", help="Render sensitive parameters inside syntax examples."
+    )
     ingest_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     ingest_cmd.set_defaults(func=cmd_ingest)
 
     suggest_cmd = subcommands.add_parser("suggest", help="Show deterministic next-step suggestions.")
     suggest_cmd.add_argument("name", help="Target name.")
     suggest_cmd.add_argument("--playbooks", default="playbooks", help="Community playbook file or directory.")
-    suggest_cmd.add_argument("--reveal-secrets", action="store_true", help="Render sensitive parameters inside syntax examples.")
+    suggest_cmd.add_argument(
+        "--reveal-secrets", action="store_true", help="Render sensitive parameters inside syntax examples."
+    )
     suggest_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     suggest_cmd.set_defaults(func=cmd_suggest)
 
@@ -117,7 +122,9 @@ def build_parser() -> argparse.ArgumentParser:
     modules_plan_cmd = modules_subcommands.add_parser("plan", help="Plan exact syntax for one target and module.")
     modules_plan_cmd.add_argument("name", help="Target name.")
     modules_plan_cmd.add_argument("module", choices=module_names(), help="Module name, such as snmp, web, smb, or dns.")
-    modules_plan_cmd.add_argument("--reveal-secrets", action="store_true", help="Render sensitive parameter values in planned syntax.")
+    modules_plan_cmd.add_argument(
+        "--reveal-secrets", action="store_true", help="Render sensitive parameter values in planned syntax."
+    )
     modules_plan_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     modules_plan_cmd.set_defaults(func=cmd_modules_plan)
 
@@ -131,7 +138,9 @@ def build_parser() -> argparse.ArgumentParser:
     params_list_cmd.set_defaults(func=cmd_params_list)
 
     params_set_cmd = params_subcommands.add_parser("set", help="Set a parameter.")
-    params_set_cmd.add_argument("key", help="Parameter name, such as community, known_user, known_password, domain, or wordlist.")
+    params_set_cmd.add_argument(
+        "key", help="Parameter name, such as community, known_user, known_password, domain, or wordlist."
+    )
     params_set_cmd.add_argument("value", help="Parameter value.")
     params_set_cmd.add_argument("--sensitive", action="store_true", help="Store as sensitive and mask by default.")
     params_set_cmd.add_argument("--source", default="manual", help="Source label for the value.")
@@ -169,7 +178,9 @@ def build_parser() -> argparse.ArgumentParser:
     sources_fetch_cmd.add_argument("source_id", help="Source seed id, such as nmap or ffuf.")
     sources_fetch_cmd.add_argument("--url", help="Specific seed URL to fetch. Defaults to the first seed URL.")
     sources_fetch_cmd.add_argument("--seeds", default=str(DEFAULT_SEEDS_PATH), help="Path to SOURCE_SEEDS.json.")
-    sources_fetch_cmd.add_argument("--cache-dir", default=str(DEFAULT_CACHE_DIR), help="Ignored raw source cache directory.")
+    sources_fetch_cmd.add_argument(
+        "--cache-dir", default=str(DEFAULT_CACHE_DIR), help="Ignored raw source cache directory."
+    )
     sources_fetch_cmd.add_argument("--timeout", type=int, default=15, help="Fetch timeout in seconds.")
     sources_fetch_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     sources_fetch_cmd.set_defaults(func=cmd_sources_fetch)
@@ -259,7 +270,7 @@ def cmd_evidence(args: argparse.Namespace, workspace: Workspace) -> int:
     workspace.require_target(args.name)
     evidence = workspace.load_evidence(args.name)
     if args.json:
-        print(json.dumps({"evidence": [item.to_dict() for item in evidence]}, indent=2))
+        print(json.dumps({"evidence": [item.to_dict(reveal=args.reveal_secrets) for item in evidence]}, indent=2))
         return 0
 
     if not evidence:
@@ -268,7 +279,8 @@ def cmd_evidence(args: argparse.Namespace, workspace: Workspace) -> int:
 
     for item in evidence:
         service = f" {item.service_key}" if item.service_key else ""
-        print(f"{item.type:<22} {item.confidence:<7}{service:<10} {item.value}")
+        value = item.to_dict(reveal=args.reveal_secrets)["value"]
+        print(f"{item.type:<22} {item.confidence:<7}{service:<10} {value}")
     return 0
 
 
@@ -297,7 +309,7 @@ def cmd_ingest(args: argparse.Namespace, workspace: Workspace) -> int:
         print(
             json.dumps(
                 {
-                    "added": [item.to_dict() for item in result.evidence],
+                    "added": [item.to_dict(reveal=args.reveal_secrets) for item in result.evidence],
                     "ignored_duplicates": result.ignored_duplicates,
                     "suggestions": [suggestion.to_dict() for suggestion in suggestions],
                 },
@@ -312,7 +324,8 @@ def cmd_ingest(args: argparse.Namespace, workspace: Workspace) -> int:
     if result.evidence:
         for item in result.evidence[:12]:
             service = f" ({item.service_key})" if item.service_key else ""
-            print(f"- {item.type}: {item.value}{service}")
+            value = item.to_dict(reveal=args.reveal_secrets)["value"]
+            print(f"- {item.type}: {value}{service}")
         if len(result.evidence) > 12:
             print(f"- ... {len(result.evidence) - 12} more")
 

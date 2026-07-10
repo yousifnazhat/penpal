@@ -110,6 +110,21 @@ class CliTests(unittest.TestCase):
         self.assertIn("- service: udp/161 snmp", output)
         self.assertIn("- service_any: tcp/143 imap", output)
 
+    def test_evidence_masks_sensitive_values_unless_revealed(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            target = workspace.create_target("10.10.10.5", name="chain")
+            workspace.append_evidence(
+                target.name,
+                extract_evidence("password=Winter2024!\n", source="note").evidence,
+            )
+
+            masked = run_json(["--workspace", temp_dir, "evidence", target.name, "--json"])
+            revealed = run_json(["--workspace", temp_dir, "evidence", target.name, "--json", "--reveal-secrets"])
+
+        self.assertEqual(masked["evidence"][0]["value"], "<sensitive>")
+        self.assertEqual(revealed["evidence"][0]["value"], "Winter2024!")
+
     def test_sources_list_json(self) -> None:
         seeds = {
             "schema": "penpal-source-seeds-v1",

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from .models import Service
 
@@ -88,11 +88,7 @@ def recommendations_for(service: Service) -> list[str]:
 
 
 def all_recommendations(services: list[Service]) -> dict[str, list[str]]:
-    return {
-        service.key: recommendations_for(service)
-        for service in services
-        if recommendations_for(service)
-    }
+    return {service.key: recommendations_for(service) for service in services if recommendations_for(service)}
 
 
 def dedupe(values: list[str]) -> list[str]:
@@ -103,4 +99,3 @@ def dedupe(values: list[str]) -> list[str]:
             seen.add(value)
             result.append(value)
     return result
-

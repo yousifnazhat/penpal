@@ -10,7 +10,7 @@ Do not change these casually. If a contract changes, update the contract fixture
 | --- | --- | --- | --- |
 | `penpal-context-v1` | `python -m penpal context <target> --json` | PI, MCP, future UI | `tests/test_contracts.py` |
 | Suggestion JSON | `python -m penpal suggest <target> --json` | PI, MCP, future UI | `tests/test_contracts.py`, `tests/test_cli.py` |
-| Evidence JSON | `python -m penpal evidence <target> --json` | PI, MCP, future UI | `tests/test_contracts.py`, `tests/test_cli.py` |
+| Evidence JSON | `python -m penpal evidence <target> --json` | PI, MCP, future UI | masked by default; `tests/test_contracts.py`, `tests/test_cli.py`, `tests/test_api.py` |
 | Playbook JSON | `playbooks/*.json` | core matcher, contributors | `tests/test_playbooks.py` |
 | Playbook `matched_signals` | core matcher | PI explanations, operator citations | `tests/test_contracts.py` |
 | Masked context output | `build_context(..., reveal_secrets=False)` | all default harness reads | `tests/test_contracts.py` |
@@ -31,6 +31,8 @@ If the answer is unclear, keep the current contract.
 ## Safety invariants
 
 - Default harness reads are masked.
+- Evidence reads and ingest responses mask credential-like values unless the operator explicitly requests revelation.
+- The local API accepts pasted `body.text`, never arbitrary local file paths, and does not enable browser cross-origin access.
 - Suggestions cite stored services, evidence, or playbook `matched_signals`.
 - Commands stay visible to the operator.
 - Mutating tools require operator approval.

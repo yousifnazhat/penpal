@@ -1,0 +1,52 @@
+# PI Package Distribution Plan
+
+Status: planning only. PenPal does not publish an npm PI package or a PyPI package yet.
+
+## Current supported path
+
+The repository root is a private PI package. `.pi/settings.json` loads it from the local checkout, and the extension runs the Python core and bundled playbooks from that same checkout. This is the supported downloaded-repository experience.
+
+The current `package.json` deliberately uses `penpal-pi@0.0.0` with `private: true`. It is not a candidate for publication as-is.
+
+## Why publication waits
+
+PI can install npm packages globally or project-locally, but PenPal's extension needs a compatible Python core, its playbooks, and an operator-owned workspace. A published npm package must not quietly put target data inside its installation directory or rely on a hidden clone of the repository.
+
+`npm pack --dry-run --json` on 2026-07-09 confirmed that the current root manifest would ship CI configuration, documentation, tests, and the repository-local PI setting. That is useful evidence that the current root package is for local development, not distribution.
+
+## Recommended distribution shape
+
+1. Make the Python `penpal` core independently installable and versioned first.
+2. Publish a separate, scoped npm PI adapter package after the maintainer verifies ownership of the npm scope and package name.
+3. Have the adapter run the installed Python core through an explicit Python executable configuration, with an operator-selected workspace outside the npm installation directory.
+4. Keep the npm adapter and Python core on the same documented compatibility range. The adapter must fail clearly when the compatible core is absent.
+
+The npm adapter should retain PI and `typebox` as peer dependencies, because PI provides those extension APIs. Third-party runtime packages belong in `dependencies` only when the adapter actually imports them.
+
+## Required package changes before publishing
+
+- Move the PI extension out of `examples/` into a distribution-specific package directory.
+- Add a narrow npm `files` allowlist for only the extension, package metadata, license, and user documentation.
+- Replace the repository-root fallback with explicit Python-core and workspace discovery.
+- Select and verify a scoped npm name; do not assume the unscoped `penpal-pi` name is available or owned.
+- Set a real adapter version and document its supported PenPal core range.
+- Keep mutating tools disabled by default in the published adapter.
+
+## Release gates
+
+Before any npm publication, all of these must pass from a clean temporary directory:
+
+```text
+npm pack --dry-run
+python -m pip install <published PenPal core version>
+pi install -l npm:<verified scope>/<verified package>@<version>
+pi --no-builtin-tools --tools penpal_context ...
+```
+
+The smoke must prove that PI loads the published adapter, the adapter reads a masked `penpal-context-v1` snapshot, the workspace is outside the npm package directory, and `penpal_ingest` remains unavailable unless explicitly enabled and approved.
+
+PI package installation details are documented in the official [PI packages guide](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/packages.md).
+
+## Next decision
+
+The next implementation decision is Python-core distribution: decide whether the maintainer wants a public PyPI release or a different approved installation channel. That choice determines the adapter's core discovery and compatibility contract. No npm publication should happen before it is made.

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from .models import Service, Target
 from .recommendations import recommendations_for
@@ -49,4 +49,3 @@ def render_summary(target: Target, services: list[Service]) -> str:
         lines.extend(["No service-specific checks yet.", ""])
 
     return "\n".join(lines).rstrip() + "\n"
-

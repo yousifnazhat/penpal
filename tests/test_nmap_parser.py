@@ -1,4 +1,4 @@
-﻿from pathlib import Path
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
@@ -44,4 +44,3 @@ class NmapParserTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

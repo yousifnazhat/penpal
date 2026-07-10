@@ -8,11 +8,15 @@ from .workspace import DEFAULT_WORKSPACE, Workspace
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="python -m penpal.module_cli", description="Plan source-backed PenPal service modules.")
+    parser = argparse.ArgumentParser(
+        prog="python -m penpal.module_cli", description="Plan source-backed PenPal service modules."
+    )
     parser.add_argument("--workspace", default=DEFAULT_WORKSPACE)
     parser.add_argument("name", help="Target name.")
     parser.add_argument("module", choices=module_names())
-    parser.add_argument("--reveal-secrets", action="store_true", help="Render sensitive parameter values in planned syntax.")
+    parser.add_argument(
+        "--reveal-secrets", action="store_true", help="Render sensitive parameter values in planned syntax."
+    )
     parser.add_argument("--json", action="store_true", help="Emit raw JSON.")
     args = parser.parse_args(argv)
 

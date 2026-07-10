@@ -108,7 +108,9 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(data["final_url"], "https://nmap.org/docs.html")
         self.assertTrue(cache_path.name.endswith(".html"))
         self.assertEqual(cached, html)
-        self.assertIn({"type": "page_title", "value": "Nmap Docs", "source_url": "https://nmap.org/docs.html"}, data["facts"])
+        self.assertIn(
+            {"type": "page_title", "value": "Nmap Docs", "source_url": "https://nmap.org/docs.html"}, data["facts"]
+        )
         self.assertIn(
             {
                 "type": "workflow_heading",
@@ -134,7 +136,9 @@ class SourceTests(unittest.TestCase):
             path = _write_seeds(temp_dir)
 
             with self.assertRaisesRegex(ValueError, "url is not listed"):
-                fetch_source_seed("nmap", url="https://nmap.org/book/", seeds_path=path, cache_dir=Path(temp_dir) / "cache")
+                fetch_source_seed(
+                    "nmap", url="https://nmap.org/book/", seeds_path=path, cache_dir=Path(temp_dir) / "cache"
+                )
 
     def test_fetch_source_seed_rejects_redirect_outside_allowed_domain(self) -> None:
         with TemporaryDirectory() as temp_dir:

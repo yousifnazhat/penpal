@@ -214,7 +214,9 @@ def _parse_html(text: str) -> "_SourceHTMLParser":
     return parser
 
 
-def _extract_candidate_facts(seed: dict[str, Any], parsed: "_SourceHTMLParser", source_url: str) -> list[dict[str, str]]:
+def _extract_candidate_facts(
+    seed: dict[str, Any], parsed: "_SourceHTMLParser", source_url: str
+) -> list[dict[str, str]]:
     facts: list[dict[str, str]] = []
     extraction_types = set(seed.get("extract", []))
     if extraction_types.intersection(

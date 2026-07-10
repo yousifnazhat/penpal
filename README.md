@@ -50,6 +50,13 @@ Use PenPal to summarize target demo and recommend next checks.
 
 The demo writes to `penpal-workspace/`, which is ignored by Git.
 
+For contributor checks, install the pinned development tools and run the complete local gate:
+
+```bash
+python3 -m pip install ".[dev]"
+make check
+```
+
 ### PenPal core
 
 From this directory:
@@ -114,7 +121,7 @@ python -m penpal suggest nibbles
 python -m penpal suggest nibbles --reveal-secrets
 ```
 
-Sensitive values are stored locally in `parameters.json` and masked by default in output. Use `--reveal-secrets` only when you intentionally want complete command syntax printed.
+Sensitive values are stored locally in `parameters.json` and credential-like evidence is masked by default in output. Use `--reveal-secrets` only when you intentionally want complete command syntax or evidence values printed.
 
 For PI and future frontend integrations, `python -m penpal context <name> --json` returns a single masked snapshot of the target, services, evidence, parameters, deterministic suggestions, playbook match metadata, and Markdown summary.
 
@@ -160,7 +167,7 @@ Scan execution is opt-in. Without `--execute`, `scan` prints the commands it wou
 
 ## API
 
-The API is intentionally small and frontend-friendly:
+The API is intentionally small and local-only. It accepts pasted tool output in `body.text`; use the CLI for local file ingestion. Browser cross-origin access is disabled, and credential-like evidence is masked unless `reveal_secrets=true` is explicitly requested.
 
 - `GET /api/health`
 - `GET /api/targets`
@@ -194,6 +201,7 @@ For the product direction and architecture, see:
 - [MCP Adapter Plan](docs/MCP_ADAPTER.md)
 - [Product Principles](docs/PRODUCT_PRINCIPLES.md)
 - [PI Adapter Contract](docs/PI_ADAPTER.md)
+- [PI Package Distribution](docs/PI_PACKAGE_DISTRIBUTION.md)
 - [PI Example](examples/pi/README.md)
 - [Playbook Authoring](playbooks/README.md)
 - [Release Notes](docs/RELEASE_NOTES.md)
