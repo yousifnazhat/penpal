@@ -6,7 +6,8 @@ import time
 import unittest
 from unittest.mock import patch
 
-from penpal.models import Evidence, Parameter, Service
+from penpal.models import Evidence, Parameter, Service, Target
+from penpal.scope import SCOPE_SCHEMA, ScopeViolationError
 from penpal.workspace import (
     EVIDENCE_STORAGE_SCHEMA,
     JOB_STORAGE_SCHEMA,
@@ -27,6 +28,43 @@ class SlowEvidenceWorkspace(Workspace):
 
 
 class WorkspaceTests(unittest.TestCase):
+    def test_scope_is_optional_until_configured_then_enforced(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            workspace.create_target("192.0.2.10", name="legacy")
+            scope = workspace.set_scope(["10.10.10.0/24", "*.lab.example"], ["10.10.10.9"])
+            allowed = workspace.create_target("10.10.10.5", name="allowed")
+
+            with self.assertRaisesRegex(ScopeViolationError, "did not match an include rule"):
+                workspace.create_target("192.0.2.20", name="blocked")
+            with self.assertRaisesRegex(ScopeViolationError, "excluded by 10.10.10.9"):
+                workspace.create_target("10.10.10.9", name="excluded")
+            with self.assertRaises(ScopeViolationError):
+                workspace.require_target("legacy")
+            with self.assertRaises(ScopeViolationError):
+                workspace.save_target(Target(name="direct", host="192.0.2.30"))
+
+            stored = json.loads(workspace.scope_path().read_text(encoding="utf-8"))
+            blocked_exists = (workspace.targets_dir / "blocked").exists()
+
+        self.assertEqual(allowed.host, "10.10.10.5")
+        self.assertEqual(scope.includes, ("10.10.10.0/24", "*.lab.example"))
+        self.assertEqual(stored["schema"], SCOPE_SCHEMA)
+        self.assertFalse(blocked_exists)
+
+    def test_clearing_scope_restores_access_to_quarantined_targets(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            target = workspace.create_target("192.0.2.10", name="legacy")
+            workspace.set_scope(["10.10.10.0/24"])
+
+            with self.assertRaises(ScopeViolationError):
+                workspace.require_target(target.name)
+            self.assertTrue(workspace.clear_scope())
+            restored = workspace.require_target(target.name)
+
+        self.assertEqual(restored.host, "192.0.2.10")
+
     def test_create_target_and_merge_services(self) -> None:
         with TemporaryDirectory() as temp_dir:
             workspace = Workspace(temp_dir)

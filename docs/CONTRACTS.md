@@ -22,6 +22,8 @@ New workspace JSON files carry explicit `penpal-*-v1` storage schemas. Files cre
 
 Compound updates are serialized within one `Workspace` instance, including the threaded local API. Multiple PenPal processes must not write to the same workspace concurrently.
 
+An optional workspace-root `scope.json` uses `penpal-scope-v1`. Once present, exact host, CIDR, wildcard-domain, and exclusion rules are enforced whenever a target is created or used by a target operation. Exclusions take precedence.
+
 ## Change rule
 
 A contract PR should answer:
@@ -37,6 +39,7 @@ If the answer is unclear, keep the current contract.
 ## Safety invariants
 
 - Default harness reads are masked.
+- Configured engagement scope is enforced in CLI and API target paths without a force bypass.
 - Evidence reads and ingest responses mask credential-like values unless the operator explicitly requests revelation.
 - The local API accepts pasted `body.text`, never arbitrary local file paths, and does not enable browser cross-origin access.
 - The API defaults to loopback-only binding, caps JSON request bodies at 1 MiB, and does not expose internal exception details in `500` responses.

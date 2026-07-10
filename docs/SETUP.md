@@ -18,6 +18,7 @@ No API keys are required for the deterministic core. PI requires its own provide
 ## First smoke test
 
 ```bash
+python3 -m penpal --workspace penpal-workspace scope set --include 10.10.10.5
 python3 -m penpal --workspace penpal-workspace init 10.10.10.5 --name demo --force
 python3 -m penpal --workspace penpal-workspace parse-nmap demo examples/pi/demo-nmap.xml
 python3 -m penpal --workspace penpal-workspace suggest demo
@@ -25,6 +26,8 @@ python3 -m penpal playbooks playbooks --show snmp-mail-remote
 ```
 
 `penpal-workspace/` is ignored by Git. `context` output is masked by default and is the safest input for PI or another harness.
+
+The scope file is optional for compatibility, but recommended for real engagements. Once configured, exclusions override includes and PenPal blocks operations on targets that no longer match.
 
 ## GitHub workflow
 

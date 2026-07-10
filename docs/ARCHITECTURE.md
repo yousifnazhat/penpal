@@ -89,6 +89,10 @@ PenPal should stay harness-neutral at the core. PI is the first v1 cockpit, MCP 
 
 ## Data Objects
 
+### Engagement Scope
+
+Represents the operator-approved hosts, networks, and wildcard subdomains for one workspace. It is stored at `penpal-workspace/scope.json`; exclusions take precedence, and configured scope is checked whenever a target is created or used by a target operation.
+
 ### Target
 
 Represents an in-scope host or named asset.

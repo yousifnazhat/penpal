@@ -131,6 +131,7 @@ By default, generated target data lives under:
 
 ```text
 penpal-workspace/
+  scope.json
   targets/
     nibbles/
       target.json
@@ -148,6 +149,9 @@ penpal-workspace/
 ```powershell
 python -m penpal init <host> --name <name>
 python -m penpal list
+python -m penpal scope set --include <host-or-cidr> [--exclude <host-or-cidr>]
+python -m penpal scope show
+python -m penpal scope check <host>
 python -m penpal scan <name> --profile quick
 python -m penpal scan <name> --profile version --execute
 python -m penpal parse-nmap <name> <xml-path>
@@ -166,6 +170,17 @@ python -m penpal serve --host 127.0.0.1 --port 8765
 ```
 
 Scan execution is opt-in. Without `--execute`, `scan` prints the commands it would run.
+
+## Engagement Scope
+
+Scope enforcement is opt-in for compatibility with existing workspaces. Configure it before adding targets when possible:
+
+```powershell
+python -m penpal scope set --include 10.10.10.0/24 --include '*.lab.example.com' --exclude 10.10.10.9
+python -m penpal scope check 10.10.10.5
+```
+
+Rules support exact IPs and hostnames, IPv4/IPv6 CIDRs, and wildcard subdomains such as `*.lab.example.com`. Exclusions take precedence. Once `scope.json` exists, PenPal checks the target whenever it is created or used by a target operation; narrowing scope quarantines existing out-of-scope targets without deleting their data. Removing enforcement requires `python -m penpal scope clear --confirm`.
 
 ## API
 

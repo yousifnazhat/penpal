@@ -13,6 +13,7 @@ from .advisor import build_suggestions
 from .context import build_context
 from .ingest import extract_evidence
 from .nmap_parser import NmapParseError, parse_nmap_xml
+from .scope import ScopeViolationError
 from .summary import render_summary
 from .workspace import TargetExistsError, TargetNotFoundError, Workspace, WorkspaceError
 
@@ -106,6 +107,8 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     self._json({"summary": render_summary(target, services)})
                 else:
                     self._json({"error": "not found"}, HTTPStatus.NOT_FOUND)
+            except ScopeViolationError as exc:
+                self._json({"error": str(exc)}, HTTPStatus.FORBIDDEN)
             except TargetNotFoundError as exc:
                 self._json({"error": str(exc)}, HTTPStatus.NOT_FOUND)
             except WorkspaceError:
@@ -178,6 +181,8 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     self._json({"parameter": parameter.to_dict(reveal=reveal_secrets)})
                 else:
                     self._json({"error": "not found"}, HTTPStatus.NOT_FOUND)
+            except ScopeViolationError as exc:
+                self._json({"error": str(exc)}, HTTPStatus.FORBIDDEN)
             except TargetExistsError as exc:
                 self._json({"error": str(exc)}, HTTPStatus.CONFLICT)
             except TargetNotFoundError as exc:
