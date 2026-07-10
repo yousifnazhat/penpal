@@ -18,7 +18,9 @@ Do not change these casually. If a contract changes, update the contract fixture
 
 ## Workspace storage
 
-New workspace JSON files carry explicit `penpal-*-v1` storage schemas. Files created before schema markers were introduced remain readable and gain the current schema on their next write. PenPal rejects unknown schema versions instead of guessing how to interpret them.
+Workspace JSON files carry explicit versioned `penpal-*` storage schemas. Files created before schema markers were introduced remain readable and gain the current schema on their next write. PenPal rejects unknown schema versions instead of guessing how to interpret them.
+
+Parameter storage uses `penpal-parameters-v2`; v1 files remain readable and upgrade on their next write. Environment-backed items persist `env_var` instead of `value`, while the external `penpal-context-v1` parameter shape stays unchanged.
 
 Compound updates are serialized within one `Workspace` instance, including the threaded local API. Multiple PenPal processes must not write to the same workspace concurrently.
 
@@ -39,6 +41,7 @@ If the answer is unclear, keep the current contract.
 ## Safety invariants
 
 - Default harness reads are masked.
+- Environment-backed parameters never persist their resolved value and fail clearly if explicit substitution is requested while the variable is missing.
 - Configured engagement scope is enforced in CLI and API target paths without a force bypass.
 - Evidence reads and ingest responses mask credential-like values unless the operator explicitly requests revelation.
 - The local API accepts pasted `body.text`, never arbitrary local file paths, and does not enable browser cross-origin access.

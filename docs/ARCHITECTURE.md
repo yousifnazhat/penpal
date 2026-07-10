@@ -151,7 +151,7 @@ Stored in:
 parameters.json
 ```
 
-Sensitive parameters are masked in output by default. For enterprise usage, this should eventually move to a real secret store.
+Sensitive parameters are masked in output by default. Environment-backed parameters store only a variable reference in `penpal-parameters-v2` and resolve the value in memory. OS keychain and managed-vault adapters can build on this boundary later.
 
 ### Suggestion
 

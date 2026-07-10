@@ -174,6 +174,14 @@ def build_parser() -> argparse.ArgumentParser:
     params_set_cmd.add_argument("--source", default="manual", help="Source label for the value.")
     params_set_cmd.set_defaults(func=cmd_params_set)
 
+    params_set_env_cmd = params_subcommands.add_parser(
+        "set-env",
+        help="Reference a sensitive parameter from the process environment.",
+    )
+    params_set_env_cmd.add_argument("key", help="Parameter name, such as known_password or token.")
+    params_set_env_cmd.add_argument("env_var", help="Environment variable name. The value is never persisted.")
+    params_set_env_cmd.set_defaults(func=cmd_params_set_env)
+
     params_unset_cmd = params_subcommands.add_parser("unset", help="Remove a parameter.")
     params_unset_cmd.add_argument("key", help="Parameter name.")
     params_unset_cmd.set_defaults(func=cmd_params_unset)
@@ -547,9 +555,13 @@ def cmd_params_list(args: argparse.Namespace, workspace: Workspace) -> int:
         return 0
 
     for item in sorted(parameters.values(), key=lambda parameter: parameter.name):
-        value = item.value if args.reveal_secrets or not item.sensitive else "<sensitive>"
-        marker = " sensitive" if item.sensitive else ""
-        print(f"{item.name:<20} {value}{marker}")
+        value = item.to_dict(reveal=args.reveal_secrets)["value"]
+        markers = ["sensitive"] if item.sensitive else []
+        if item.env_var:
+            markers.append(f"env:{item.env_var}")
+            markers.append("available" if item.resolved else "missing")
+        suffix = f" [{' '.join(markers)}]" if markers else ""
+        print(f"{item.name:<20} {value}{suffix}")
     return 0
 
 
@@ -563,8 +575,18 @@ def cmd_params_set(args: argparse.Namespace, workspace: Workspace) -> int:
         sensitive=sensitive,
         source=args.source,
     )
+    if parameter.sensitive:
+        print("warning: sensitive plaintext is stored in the workspace; prefer params set-env", file=sys.stderr)
     value = "<sensitive>" if parameter.sensitive else parameter.value
     print(f"set {parameter.name} = {value}")
+    return 0
+
+
+def cmd_params_set_env(args: argparse.Namespace, workspace: Workspace) -> int:
+    workspace.require_target(args.name)
+    parameter = workspace.set_environment_parameter(args.name, args.key, args.env_var)
+    status = "available" if parameter.resolved else "missing"
+    print(f"set {parameter.name} from environment {parameter.env_var} ({status})")
     return 0
 
 

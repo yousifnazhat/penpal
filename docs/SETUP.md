@@ -29,6 +29,18 @@ python3 -m penpal playbooks playbooks --show snmp-mail-remote
 
 The scope file is optional for compatibility, but recommended for real engagements. Once configured, exclusions override includes and PenPal blocks operations on targets that no longer match.
 
+## Secret parameters
+
+Reference sensitive values by environment variable instead of storing them in workspace JSON:
+
+```bash
+python3 -m penpal --workspace penpal-workspace params demo set-env known_password PENPAL_KNOWN_PASSWORD
+```
+
+Set `PENPAL_KNOWN_PASSWORD` through your shell, CI secret facility, or secret manager before starting PenPal or PI. PI and its PenPal subprocess inherit that environment. PenPal stores only the variable name, masks the value by default, and reports a missing variable instead of substituting an empty string.
+
+`params set` remains available for compatibility. If it is used for a sensitive key, the value is plaintext inside the local workspace even though normal output masks it.
+
 ## GitHub workflow
 
 Use GitHub for branches, issues, PRs, CI, and community contribution review.

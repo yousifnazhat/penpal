@@ -478,4 +478,4 @@ def _parameter_value(
         return fallback
     if parameter.sensitive and not reveal_secrets:
         return f"<{name}>"
-    return parameter.value
+    return parameter.require_value()
