@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .models import Evidence, Parameter, Service, Target, utc_now
+from .scope import EngagementScope, ScopeDecision, ScopeViolationError
 
 
 DEFAULT_WORKSPACE = "penpal-workspace"
@@ -51,6 +52,7 @@ class Workspace:
 
     def create_target(self, host: str, name: str | None = None, force: bool = False) -> Target:
         with self._lock:
+            self._require_host_in_scope(host)
             self.ensure()
             target_name = safe_target_name(name or host)
             target_dir = self.target_path(target_name)
@@ -88,9 +90,12 @@ class Workspace:
         path = self.target_path(name) / "target.json"
         if not path.exists():
             raise TargetNotFoundError(f"Unknown target: {name}")
-        return Target.from_dict(read_storage_json(path, TARGET_STORAGE_SCHEMA))
+        target = Target.from_dict(read_storage_json(path, TARGET_STORAGE_SCHEMA))
+        self._require_host_in_scope(target.host)
+        return target
 
     def save_target(self, target: Target) -> None:
+        self._require_host_in_scope(target.host)
         self.ensure()
         target.updated_at = utc_now()
         target_dir = self.target_path(target.name)
@@ -106,10 +111,48 @@ class Workspace:
             targets.append(Target.from_dict(read_storage_json(path, TARGET_STORAGE_SCHEMA)))
         return targets
 
+    def scope_path(self) -> Path:
+        return self.root / "scope.json"
+
+    def load_scope(self) -> EngagementScope | None:
+        path = self.scope_path()
+        if not path.exists():
+            return None
+        return EngagementScope.from_dict(read_json(path))
+
+    def set_scope(self, includes: list[str], excludes: list[str] | None = None) -> EngagementScope:
+        with self._lock:
+            existing = self.load_scope()
+            scope = EngagementScope.from_rules(
+                includes,
+                excludes or [],
+                created_at=existing.created_at if existing else None,
+            )
+            self.ensure()
+            write_json(self.scope_path(), scope.to_dict())
+            return scope
+
+    def clear_scope(self) -> bool:
+        with self._lock:
+            path = self.scope_path()
+            existed = path.exists()
+            path.unlink(missing_ok=True)
+            return existed
+
+    def evaluate_scope(self, host: str) -> ScopeDecision | None:
+        scope = self.load_scope()
+        return scope.evaluate(host) if scope else None
+
+    def _require_host_in_scope(self, host: str) -> None:
+        decision = self.evaluate_scope(host)
+        if decision and not decision.allowed:
+            raise ScopeViolationError(f"Target {host!r} is outside engagement scope: {decision.reason}")
+
     def services_path(self, name: str) -> Path:
         return self.target_path(name) / "services.json"
 
     def load_services(self, name: str) -> list[Service]:
+        self.require_target(name)
         path = self.services_path(name)
         if not path.exists():
             return []
@@ -142,6 +185,7 @@ class Workspace:
         return self.target_path(name) / "evidence.json"
 
     def load_evidence(self, name: str) -> list[Evidence]:
+        self.require_target(name)
         path = self.evidence_path(name)
         if not path.exists():
             return []
@@ -174,6 +218,7 @@ class Workspace:
         return self.target_path(name) / "parameters.json"
 
     def load_parameters(self, name: str) -> dict[str, Parameter]:
+        self.require_target(name)
         path = self.parameters_path(name)
         if not path.exists():
             return {}

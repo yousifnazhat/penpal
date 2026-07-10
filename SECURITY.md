@@ -9,6 +9,7 @@ Please open a private report or contact the maintainer before publishing exploit
 ## Project safety expectations
 
 - Commands must be visible and explainable.
+- Configure engagement scope for real assessments; once configured, PenPal blocks targets that do not match it.
 - Sensitive values must be masked by default.
 - Risky actions should require operator approval.
 - Evidence-backed suggestions are preferred over autonomous execution.

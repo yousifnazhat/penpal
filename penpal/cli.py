@@ -14,6 +14,7 @@ from .nmap_parser import NmapParseError, parse_nmap_xml
 from .playbooks import find_playbook, format_playbook, load_playbooks, scan_notes_vault, scan_playbooks
 from .runner import RunnerError, run_plan
 from .scan_profiles import PROFILE_CHOICES, build_scan_plan, format_command
+from .scope import normalize_host
 from .service_modules import build_module_plan, get_module, module_matches_services, module_names
 from .sources import (
     DEFAULT_CACHE_DIR,
@@ -128,6 +129,33 @@ def build_parser() -> argparse.ArgumentParser:
     modules_plan_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     modules_plan_cmd.set_defaults(func=cmd_modules_plan)
 
+    scope_cmd = subcommands.add_parser("scope", help="Configure and inspect engagement scope.")
+    scope_subcommands = scope_cmd.add_subparsers(dest="scope_action", required=True)
+
+    scope_set_cmd = scope_subcommands.add_parser("set", help="Set the enforced engagement scope.")
+    scope_set_cmd.add_argument("--include", dest="includes", action="append", required=True)
+    scope_set_cmd.add_argument("--exclude", dest="excludes", action="append", default=[])
+    scope_set_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    scope_set_cmd.set_defaults(func=cmd_scope_set)
+
+    scope_show_cmd = scope_subcommands.add_parser("show", help="Show the configured engagement scope.")
+    scope_show_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    scope_show_cmd.set_defaults(func=cmd_scope_show)
+
+    scope_check_cmd = scope_subcommands.add_parser("check", help="Check a host against engagement scope.")
+    scope_check_cmd.add_argument("host", help="IP address or hostname to evaluate.")
+    scope_check_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    scope_check_cmd.set_defaults(func=cmd_scope_check)
+
+    scope_clear_cmd = scope_subcommands.add_parser("clear", help="Remove engagement scope enforcement.")
+    scope_clear_cmd.add_argument(
+        "--confirm",
+        action="store_true",
+        required=True,
+        help="Confirm removal of the scope safety boundary.",
+    )
+    scope_clear_cmd.set_defaults(func=cmd_scope_clear)
+
     params_cmd = subcommands.add_parser("params", help="Manage target parameters used to fill command placeholders.")
     params_cmd.add_argument("name", help="Target name.")
     params_subcommands = params_cmd.add_subparsers(dest="params_action", required=True)
@@ -218,6 +246,61 @@ def cmd_list(args: argparse.Namespace, workspace: Workspace) -> int:
         return 0
     for target in targets:
         print(f"{target.name:24} {target.host}")
+    return 0
+
+
+def cmd_scope_set(args: argparse.Namespace, workspace: Workspace) -> int:
+    scope = workspace.set_scope(args.includes, args.excludes)
+    if args.json:
+        print(json.dumps({"enforced": True, "scope": scope.to_dict()}, indent=2))
+        return 0
+    print(f"engagement scope enforced with {len(scope.includes)} include and {len(scope.excludes)} exclude rules")
+    print(f"scope: {workspace.scope_path()}")
+    return 0
+
+
+def cmd_scope_show(args: argparse.Namespace, workspace: Workspace) -> int:
+    scope = workspace.load_scope()
+    if args.json:
+        print(json.dumps({"enforced": scope is not None, "scope": scope.to_dict() if scope else None}, indent=2))
+        return 0
+    if not scope:
+        print("no engagement scope configured")
+        return 0
+    print("engagement scope enforced")
+    for rule in scope.includes:
+        print(f"include: {rule}")
+    for rule in scope.excludes:
+        print(f"exclude: {rule}")
+    return 0
+
+
+def cmd_scope_check(args: argparse.Namespace, workspace: Workspace) -> int:
+    decision = workspace.evaluate_scope(args.host)
+    if decision:
+        payload = {"enforced": True, **decision.to_dict()}
+    else:
+        payload = {
+            "enforced": False,
+            "host": normalize_host(args.host),
+            "allowed": True,
+            "matched_include": None,
+            "matched_exclude": None,
+            "reason": "no engagement scope configured",
+        }
+    if args.json:
+        print(json.dumps(payload, indent=2))
+    else:
+        status = "allowed" if payload["allowed"] else "blocked"
+        print(f"{payload['host']}: {status} ({payload['reason']})")
+    return 0 if payload["allowed"] else 2
+
+
+def cmd_scope_clear(args: argparse.Namespace, workspace: Workspace) -> int:
+    if workspace.clear_scope():
+        print("engagement scope enforcement removed")
+    else:
+        print("no engagement scope configured")
     return 0
 
 

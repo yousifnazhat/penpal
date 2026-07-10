@@ -15,6 +15,35 @@ from penpal.workspace import Workspace
 
 
 class ApiTests(unittest.TestCase):
+    def test_target_creation_respects_configured_engagement_scope(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            workspace.create_target("192.0.2.5", name="quarantined")
+            workspace.set_scope(["10.10.10.0/24"])
+            server, thread = _start_server(workspace)
+            try:
+                status, _, payload = _post_json(
+                    f"http://127.0.0.1:{server.server_port}/api/targets",
+                    {"host": "192.0.2.10", "name": "blocked"},
+                    origin="https://example.invalid",
+                )
+                read_status, _, read_payload = _raw_request(
+                    server,
+                    "GET",
+                    "/api/targets/quarantined",
+                    b"",
+                    {},
+                )
+                blocked_exists = (workspace.targets_dir / "blocked").exists()
+            finally:
+                _stop_server(server, thread)
+
+        self.assertEqual(status, 403)
+        self.assertIn("outside engagement scope", payload["error"])
+        self.assertEqual(read_status, 403)
+        self.assertIn("outside engagement scope", read_payload["error"])
+        self.assertFalse(blocked_exists)
+
     def test_unknown_targets_return_404(self) -> None:
         with TemporaryDirectory() as temp_dir:
             server, thread = _start_server(Workspace(temp_dir))

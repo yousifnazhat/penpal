@@ -20,6 +20,35 @@ email: daniel@example.local
 
 
 class CliTests(unittest.TestCase):
+    def test_scope_commands_explain_allowed_and_blocked_hosts(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            configured = run_json(
+                [
+                    "--workspace",
+                    temp_dir,
+                    "scope",
+                    "set",
+                    "--include",
+                    "10.10.10.0/24",
+                    "--exclude",
+                    "10.10.10.9",
+                    "--json",
+                ]
+            )
+            allowed = run_json(["--workspace", temp_dir, "scope", "check", "10.10.10.5", "--json"])
+
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                code = main(["--workspace", temp_dir, "scope", "check", "10.10.10.9", "--json"])
+            blocked = json.loads(stdout.getvalue())
+
+        self.assertTrue(configured["enforced"])
+        self.assertTrue(allowed["allowed"])
+        self.assertEqual(allowed["matched_include"], "10.10.10.0/24")
+        self.assertEqual(code, 2)
+        self.assertFalse(blocked["allowed"])
+        self.assertEqual(blocked["matched_exclude"], "10.10.10.9")
+
     def test_json_commands_preserve_contract_shapes(self) -> None:
         with TemporaryDirectory() as temp_dir:
             root = Path(__file__).resolve().parents[1]
