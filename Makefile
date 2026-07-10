@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: check demo format lint playbooks test
+.PHONY: check demo format lint pi-check playbooks test
 
 check:
 	$(PYTHON) scripts/check.py
@@ -15,6 +15,9 @@ format:
 
 lint:
 	$(PYTHON) -m ruff check .
+
+pi-check:
+	node scripts/check-pi.mjs
 
 playbooks:
 	$(PYTHON) -m penpal playbooks playbooks

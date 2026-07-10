@@ -34,6 +34,13 @@ python3 -m penpal playbooks playbooks --show snmp-mail-remote
 
 Use `python3 scripts/check.py` instead of `make check` on systems without Make.
 
+Changes to the PI package or extension must also pass the model-free offline harness check with the PI version pinned in `.pi-version`:
+
+```bash
+PI_FORCE_INSTALL=1 ./scripts/setup-pi.sh
+make pi-check
+```
+
 ## Safety boundary
 
 Do not contribute playbooks that hide commands, bypass operator approval, or assume authorization. PenPal can suggest high-probability avenues, but the operator owns scope and execution.

@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -eu
 
-PI_PACKAGE="${PI_PACKAGE:-@earendil-works/pi-coding-agent}"
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+ROOT_DIR="$(dirname -- "$SCRIPT_DIR")"
+PI_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/.pi-version")"
+PI_PACKAGE="${PI_PACKAGE:-@earendil-works/pi-coding-agent@${PI_VERSION}}"
+ALLOW_VERSION_MISMATCH=0
 
 if ! command -v node >/dev/null 2>&1; then
   echo "error: Node.js is required for PI. Install Node.js, then rerun ./scripts/setup-pi.sh" >&2
@@ -13,12 +17,36 @@ if ! command -v npm >/dev/null 2>&1; then
   exit 1
 fi
 
-if command -v pi >/dev/null 2>&1; then
-  echo "PI already installed: $(pi --version)"
-else
-  echo "Installing PI: ${PI_PACKAGE}"
+if ! node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 22 || (major === 22 && minor >= 19) ? 0 : 1)'; then
+  echo "error: PI ${PI_VERSION} requires Node.js 22.19.0 or newer; found $(node --version)" >&2
+  exit 1
+fi
+
+install_pi() {
+  echo "Installing tested PI: ${PI_PACKAGE}"
   npm install -g --ignore-scripts "${PI_PACKAGE}"
-  echo "PI installed: $(pi --version)"
+}
+
+if command -v pi >/dev/null 2>&1; then
+  INSTALLED_VERSION="$(pi --version)"
+  if [ "$INSTALLED_VERSION" = "$PI_VERSION" ]; then
+    echo "PI already installed at tested version: ${INSTALLED_VERSION}"
+  elif [ "${PI_FORCE_INSTALL:-0}" = "1" ]; then
+    echo "Replacing PI ${INSTALLED_VERSION} with tested version ${PI_VERSION}."
+    install_pi
+  else
+    echo "PI ${INSTALLED_VERSION} is installed; PenPal is pinned and tested with ${PI_VERSION}."
+    echo "Keeping the installed version and running the compatibility smoke. Set PI_FORCE_INSTALL=1 to replace it."
+    ALLOW_VERSION_MISMATCH=1
+  fi
+else
+  install_pi
+fi
+
+if [ "$ALLOW_VERSION_MISMATCH" = "1" ]; then
+  PI_ALLOW_VERSION_MISMATCH=1 node "$ROOT_DIR/scripts/check-pi.mjs"
+else
+  node "$ROOT_DIR/scripts/check-pi.mjs"
 fi
 
 cat <<'EOF'
@@ -29,6 +57,7 @@ Next:
 
 Then from this repository:
   pi
+  /penpal-status
 
 Approve project-local files if PI asks, then run /login if a provider is not configured.
 EOF

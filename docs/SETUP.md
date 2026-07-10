@@ -57,11 +57,19 @@ Do not publish from automation unless the maintainer explicitly asks for a commi
 
 Use the read-only PI extension in `examples/pi/` as the official v1 cockpit path.
 
-Git clone/download does not auto-run installers. Run the repo bootstrap once to install or verify PI:
+PI currently requires Node.js 22.19.0 or newer and npm. Git clone/download does not auto-run installers, so run the repo bootstrap once to install or verify PI:
 
 ```bash
 ./scripts/setup-pi.sh
 ```
+
+On Windows PowerShell:
+
+```powershell
+./scripts/setup-pi.ps1
+```
+
+The scripts install the exact version in `.pi-version` when PI is absent and run `scripts/check-pi.mjs` offline without provider credentials. An existing different version is preserved only if the compatibility smoke passes; use `PI_FORCE_INSTALL=1` on Bash or `-ForceInstall` on PowerShell to replace it with the tested version.
 
 Log into a model provider from PI before testing the extension:
 
@@ -77,6 +85,8 @@ Once PI opens, try:
 ```text
 Use PenPal to summarize target demo and recommend next checks.
 ```
+
+Run `/penpal-status` to verify the package, seven read-only tools, Python core, and playbooks without calling a model.
 
 Keep mutating tools disabled unless the operator approval flow is enabled and tested.
 

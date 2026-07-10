@@ -11,6 +11,15 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const cwd = process.env.PENPAL_CWD ?? packageRoot;
 const python = process.env.PENPAL_PYTHON ?? "python3";
 const workspace = process.env.PENPAL_WORKSPACE;
+const readOnlyTools = [
+  "penpal_context",
+  "penpal_suggest",
+  "penpal_evidence",
+  "penpal_playbooks_validate",
+  "penpal_playbook_show",
+  "penpal_modules_list",
+  "penpal_module_plan",
+];
 
 export default function (pi: ExtensionAPI) {
   registerPenpalIngestTool(pi);
@@ -93,6 +102,28 @@ export default function (pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params, signal) {
       return textResult(await penpal(["modules", "plan", params.target, params.module, "--json"], signal));
+    },
+  });
+
+  pi.registerCommand("penpal-status", {
+    description: "Verify the PenPal extension, read-only tools, and deterministic core.",
+    handler: async (_args, ctx) => {
+      const registered = new Set(pi.getAllTools().map((tool) => tool.name));
+      const missing = readOnlyTools.filter((tool) => !registered.has(tool));
+      if (missing.length > 0) {
+        ctx.ui.notify(`PenPal extension incomplete; missing tools: ${missing.join(", ")}`, "error");
+        return;
+      }
+
+      const report = JSON.parse(await penpal(["playbooks", "playbooks", "--json"]));
+      if (report.invalid_playbooks !== 0) {
+        ctx.ui.notify(`PenPal core reported ${report.invalid_playbooks} invalid playbooks`, "error");
+        return;
+      }
+      ctx.ui.notify(
+        `PenPal ready: ${readOnlyTools.length} read-only tools registered; ${report.valid_playbooks} playbooks valid.`,
+        "info",
+      );
     },
   });
 }

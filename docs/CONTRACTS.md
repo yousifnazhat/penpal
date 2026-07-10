@@ -14,7 +14,7 @@ Do not change these casually. If a contract changes, update the contract fixture
 | Playbook JSON | `playbooks/*.json` | core matcher, contributors | `tests/test_playbooks.py` |
 | Playbook `matched_signals` | core matcher | PI explanations, operator citations | `tests/test_contracts.py` |
 | Masked context output | `build_context(..., reveal_secrets=False)` | all default harness reads | `tests/test_contracts.py` |
-| PI smoke commands | `examples/pi/README.md` | maintainers and contributors | manual pre-release smoke |
+| PI harness smoke | `node scripts/check-pi.mjs` | maintainers and contributors | provider-free offline CI on Linux and Windows |
 
 ## Workspace storage
 
