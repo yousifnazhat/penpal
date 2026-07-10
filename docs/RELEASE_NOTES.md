@@ -1,54 +1,62 @@
 # Release Notes
 
-## v0.1.0 Release Candidate
+## v0.1.1-rc.1 Hardened Early Access
 
-PenPal `0.1.0` is the first public contributor-ready release candidate. It keeps PenPal's deterministic Python core as the source of truth and uses PI as the intended conversational cockpit.
+PenPal `0.1.1rc1` is the recommended early-adopter checkpoint for the downloaded-repository workflow. It preserves the deterministic Python core and project-local PI cockpit while hardening user data, persistence, packaging, and contributor verification.
 
-### User Path
+### Upgrade
+
+Download or pull the new release and continue using the existing workspace. Stored `v0.1.0` workspaces remain compatible and require no migration.
+
+Sensitive evidence is now masked by default in `evidence` and `ingest` output. Use `--reveal-secrets` only when intentionally displaying the underlying value.
+
+### Security And Reliability
+
+- Removed browser cross-origin access from the local API.
+- Removed arbitrary local-file ingestion from the API; API callers submit bounded tool output as text.
+- Masked credential-like evidence in API and CLI reads unless explicitly revealed.
+- Replaced workspace JSON files atomically and preserved the previous file when replacement fails.
+- Validated target existence before writing services, evidence, or parameters.
+- Kept parsed Nmap service results in their persisted job record.
+
+### Extraction Quality
+
+- Added realistic feroxbuster, Nmap, SNMP, and configuration-noise fixtures.
+- Corrected URL path extraction so `https://host/assets/app.js` records `/assets/app.js`, not a malformed host-prefixed path.
+
+### Contributor Experience
+
+- Added pinned Ruff linting and formatting.
+- Added `make check` for lint, format, 53 unit tests, and playbook validation.
+- Made Python package discovery explicit so `playbooks/` is not mistaken for a Python package.
+- Added a documented, deliberately gated PI npm-package distribution plan.
+
+### Current Distribution
+
+The supported experience remains a clone or GitHub release archive:
 
 ```bash
-git clone https://github.com/yousifnazhat/penpal.git
-cd penpal
-python3 -m unittest discover -v
-python3 -m penpal playbooks playbooks
-python3 -m penpal --workspace penpal-workspace init 10.10.10.5 --name demo --force
-python3 -m penpal --workspace penpal-workspace parse-nmap demo examples/pi/demo-nmap.xml
-python3 -m penpal --workspace penpal-workspace suggest demo
+python3 -m pip install ".[dev]"
+make check
 ./scripts/setup-pi.sh
 pi
 ```
 
-On first PI launch, approve project-local files if prompted. Run `/login` inside PI if a provider is not configured, then ask:
-
-```text
-Use PenPal to summarize target demo and recommend next checks.
-```
-
-### Included
-
-- Local target workspaces, Nmap parsing, evidence ingest, masked context, deterministic suggestions, and Markdown summaries.
-- Four validated community playbooks plus a contributor template.
-- Source-backed eval cases and reviewed source facts for suggestion behavior.
-- Service module planning for DNS, SMB, SNMP, and web checks without command execution.
-- PI project package loading from `.pi/settings.json`, so normal PI startup can expose PenPal tools without `-e`.
-- PI read-only tools for context, suggestions, evidence, playbooks, and service module plans.
-- Disabled-by-default PI ingest tool with explicit operator approval.
+No npm PI adapter or PyPI package is published in this release candidate.
 
 ### Safety Boundaries
 
 - No direct C2 tasking.
 - No exploit execution through PI.
 - No autonomous credential use.
-- Sensitive parameters and credential-like evidence stay masked by default.
-- Mutating PI tools require explicit opt-in and operator approval.
+- Mutating PI tools remain disabled by default and require operator approval.
 
 ### Verify The Release
 
 ```bash
-python3 -m unittest discover -v
-python3 -m penpal playbooks playbooks
+make check
+npm pack --dry-run --json
 ./scripts/setup-pi.sh
-git diff --check
 ```
 
-The clean-clone, tag archive, and release tarball smoke results are tracked in [v1 Release Checklist](V1_RELEASE_CHECKLIST.md).
+Release and smoke evidence is tracked in [v1 Release Checklist](V1_RELEASE_CHECKLIST.md).
