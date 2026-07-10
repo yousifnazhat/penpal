@@ -57,6 +57,8 @@ python3 -m pip install ".[dev]"
 make check
 ```
 
+On systems without Make, run the same portable gate with `python3 scripts/check.py`.
+
 ### PenPal core
 
 From this directory:
