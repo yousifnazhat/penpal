@@ -46,6 +46,10 @@ class ContractFixtureTests(unittest.TestCase):
             {"id", "type", "value", "source", "created_at", "confidence", "service_key", "context", "tags", "metadata"},
         )
         self.assertEqual(
+            set(context["parameters"][0]),
+            {"name", "value", "sensitive", "source", "created_at", "updated_at"},
+        )
+        self.assertEqual(
             set(context["suggestions"][0]),
             {
                 "id",

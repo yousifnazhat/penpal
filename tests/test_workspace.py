@@ -6,7 +6,7 @@ import time
 import unittest
 from unittest.mock import patch
 
-from penpal.models import Evidence, Parameter, Service, Target
+from penpal.models import Evidence, Parameter, ParameterResolutionError, Service, Target
 from penpal.scope import SCOPE_SCHEMA, ScopeViolationError
 from penpal.workspace import (
     EVIDENCE_STORAGE_SCHEMA,
@@ -79,6 +79,108 @@ class WorkspaceTests(unittest.TestCase):
             self.assertTrue((workspace.target_path("nibbles") / "notes.md").exists())
             self.assertEqual(len(services), 1)
             self.assertEqual(workspace.load_services("nibbles")[0].name, "http")
+
+    def test_environment_parameters_resolve_without_persisting_values(self) -> None:
+        secret = "Winter2024!"
+        environment = {"PENPAL_TEST_SECRET": secret}
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir, environment=environment)
+            target = workspace.create_target("10.10.10.5", name="nibbles")
+            parameter = workspace.set_environment_parameter(
+                target.name,
+                "known_password",
+                "PENPAL_TEST_SECRET",
+            )
+            stored_text = workspace.parameters_path(target.name).read_text(encoding="utf-8")
+            stored = json.loads(stored_text)
+            stored_parameter = next(item for item in stored["parameters"] if item["name"] == "known_password")
+
+            environment["PENPAL_TEST_SECRET"] = "Spring2026!"
+            reloaded = workspace.load_parameters(target.name)["known_password"]
+
+        self.assertTrue(parameter.resolved)
+        self.assertEqual(parameter.to_dict(reveal=False)["value"], "<sensitive>")
+        self.assertEqual(stored["schema"], PARAMETERS_STORAGE_SCHEMA)
+        self.assertEqual(stored_parameter["env_var"], "PENPAL_TEST_SECRET")
+        self.assertNotIn("value", stored_parameter)
+        self.assertNotIn(secret, stored_text)
+        self.assertEqual(reloaded.require_value(), "Spring2026!")
+        self.assertEqual(reloaded.to_dict()["source"], "env:PENPAL_TEST_SECRET")
+
+    def test_missing_environment_parameter_is_visible_but_never_rendered_empty(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir, environment={})
+            target = workspace.create_target("10.10.10.5", name="nibbles")
+            workspace.set_environment_parameter(target.name, "known_password", "PENPAL_MISSING_SECRET")
+            parameter = workspace.load_parameters(target.name)["known_password"]
+
+        self.assertFalse(parameter.resolved)
+        self.assertEqual(parameter.to_dict(reveal=True)["value"], "<missing>")
+        with self.assertRaisesRegex(ParameterResolutionError, "PENPAL_MISSING_SECRET"):
+            parameter.require_value()
+
+    def test_invalid_environment_variable_names_are_rejected_before_storage_changes(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir, environment={})
+            target = workspace.create_target("10.10.10.5", name="nibbles")
+            original = workspace.parameters_path(target.name).read_text(encoding="utf-8")
+
+            for env_var in ["", "9INVALID", "INVALID-NAME", "INVALID NAME"]:
+                with self.subTest(env_var=env_var):
+                    with self.assertRaisesRegex(ValueError, "invalid environment variable name"):
+                        workspace.set_environment_parameter(target.name, "known_password", env_var)
+
+            unchanged = workspace.parameters_path(target.name).read_text(encoding="utf-8")
+
+        self.assertEqual(unchanged, original)
+
+    def test_v1_parameter_storage_loads_and_upgrades_to_v2(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            target = workspace.create_target("10.10.10.5", name="nibbles")
+            write_json(
+                workspace.parameters_path(target.name),
+                {
+                    "schema": "penpal-parameters-v1",
+                    "parameters": [
+                        {
+                            "name": "known_password",
+                            "value": "legacy-secret",
+                            "sensitive": True,
+                            "source": "manual",
+                        }
+                    ],
+                },
+            )
+
+            parameters = workspace.load_parameters(target.name)
+            workspace.save_parameters(target.name, parameters)
+            upgraded = json.loads(workspace.parameters_path(target.name).read_text(encoding="utf-8"))
+
+        self.assertEqual(parameters["known_password"].value, "legacy-secret")
+        self.assertEqual(upgraded["schema"], PARAMETERS_STORAGE_SCHEMA)
+
+    def test_environment_parameter_storage_rejects_embedded_values(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir, environment={"PENPAL_TEST_SECRET": "runtime-secret"})
+            target = workspace.create_target("10.10.10.5", name="nibbles")
+            write_json(
+                workspace.parameters_path(target.name),
+                {
+                    "schema": PARAMETERS_STORAGE_SCHEMA,
+                    "parameters": [
+                        {
+                            "name": "known_password",
+                            "env_var": "PENPAL_TEST_SECRET",
+                            "value": "must-not-coexist",
+                            "sensitive": True,
+                        }
+                    ],
+                },
+            )
+
+            with self.assertRaisesRegex(ValueError, "must not store a value"):
+                workspace.load_parameters(target.name)
 
     def test_write_json_replaces_the_complete_file_and_cleans_up_temporary_data(self) -> None:
         with TemporaryDirectory() as temp_dir:

@@ -5,10 +5,11 @@ import os
 import re
 import tempfile
 import threading
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from .models import Evidence, Parameter, Service, Target, utc_now
+from .models import Evidence, Parameter, Service, Target, normalize_environment_variable_name, utc_now
 from .scope import EngagementScope, ScopeDecision, ScopeViolationError
 
 
@@ -17,7 +18,8 @@ SAFE_NAME_RE = re.compile(r"[^A-Za-z0-9_.-]+")
 TARGET_STORAGE_SCHEMA = "penpal-target-v1"
 SERVICES_STORAGE_SCHEMA = "penpal-services-v1"
 EVIDENCE_STORAGE_SCHEMA = "penpal-evidence-v1"
-PARAMETERS_STORAGE_SCHEMA = "penpal-parameters-v1"
+PARAMETERS_STORAGE_SCHEMA = "penpal-parameters-v2"
+LEGACY_PARAMETERS_STORAGE_SCHEMAS = ("penpal-parameters-v1",)
 JOB_STORAGE_SCHEMA = "penpal-job-v1"
 
 
@@ -39,9 +41,15 @@ def safe_target_name(value: str) -> str:
 
 
 class Workspace:
-    def __init__(self, root: str | Path = DEFAULT_WORKSPACE):
+    def __init__(
+        self,
+        root: str | Path = DEFAULT_WORKSPACE,
+        *,
+        environment: Mapping[str, str] | None = None,
+    ):
         self.root = Path(root)
         self.targets_dir = self.root / "targets"
+        self.environment = os.environ if environment is None else environment
         self._lock = threading.RLock()
 
     def ensure(self) -> None:
@@ -222,8 +230,10 @@ class Workspace:
         path = self.parameters_path(name)
         if not path.exists():
             return {}
-        data = read_storage_json(path, PARAMETERS_STORAGE_SCHEMA)
-        return {item["name"]: Parameter.from_dict(item) for item in data.get("parameters", [])}
+        data = read_storage_json(path, PARAMETERS_STORAGE_SCHEMA, LEGACY_PARAMETERS_STORAGE_SCHEMAS)
+        return {
+            item["name"]: Parameter.from_dict(item, environment=self.environment) for item in data.get("parameters", [])
+        }
 
     def save_parameters(self, name: str, parameters: dict[str, Parameter]) -> None:
         target = self.require_target(name)
@@ -233,7 +243,7 @@ class Workspace:
             {
                 "schema": PARAMETERS_STORAGE_SCHEMA,
                 "updated_at": utc_now(),
-                "parameters": [item.to_dict(reveal=True) for item in ordered],
+                "parameters": [item.to_storage_dict() for item in ordered],
             },
         )
         self.save_target(target)
@@ -256,6 +266,26 @@ class Workspace:
                 source=source,
                 created_at=existing.created_at if existing else utc_now(),
                 updated_at=utc_now(),
+            )
+            parameters[parameter_name] = parameter
+            self.save_parameters(name, parameters)
+            return parameter
+
+    def set_environment_parameter(self, name: str, parameter_name: str, env_var: str) -> Parameter:
+        normalized_env_var = normalize_environment_variable_name(env_var)
+        with self._lock:
+            parameters = self.load_parameters(name)
+            existing = parameters.get(parameter_name)
+            parameter = Parameter.from_dict(
+                {
+                    "name": parameter_name,
+                    "env_var": normalized_env_var,
+                    "sensitive": True,
+                    "source": "environment",
+                    "created_at": existing.created_at if existing else utc_now(),
+                    "updated_at": utc_now(),
+                },
+                environment=self.environment,
             )
             parameters[parameter_name] = parameter
             self.save_parameters(name, parameters)
@@ -289,10 +319,14 @@ def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def read_storage_json(path: Path, expected_schema: str) -> dict[str, Any]:
+def read_storage_json(
+    path: Path,
+    expected_schema: str,
+    compatible_schemas: tuple[str, ...] = (),
+) -> dict[str, Any]:
     data = read_json(path)
     schema = data.get("schema")
-    if schema not in {None, expected_schema}:
+    if schema not in {None, expected_schema, *compatible_schemas}:
         raise WorkspaceError(f"Unsupported storage schema in {path}: {schema}")
     return data
 

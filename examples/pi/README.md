@@ -73,6 +73,15 @@ email: daniel@example.local
 EOF
 ```
 
+For sensitive target parameters, configure an environment reference before launching PI:
+
+```bash
+python3 -m penpal --workspace penpal-workspace params demo set-env known_password PENPAL_KNOWN_PASSWORD
+pi
+```
+
+Set `PENPAL_KNOWN_PASSWORD` through the shell or a secret manager first. The PI extension's Python subprocess inherits PI's environment; only the variable name is stored in PenPal. Do not put the resolved value in `.pi/settings.json` or the repository.
+
 Then prove PI can read context and suggestions:
 
 ```bash

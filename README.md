@@ -160,6 +160,7 @@ python -m penpal ingest <name> --file <output.txt> --source <tool-name> --servic
 python -m penpal evidence <name>
 python -m penpal params <name> list
 python -m penpal params <name> set <key> <value>
+python -m penpal params <name> set-env <key> <ENV_VAR>
 python -m penpal params <name> unset <key>
 python -m penpal suggest <name>
 python -m penpal context <name> --json
@@ -170,6 +171,8 @@ python -m penpal serve --host 127.0.0.1 --port 8765
 ```
 
 Scan execution is opt-in. Without `--execute`, `scan` prints the commands it would run.
+
+For passwords, tokens, and other secrets, use `params set-env`. PenPal stores only the environment variable name in `parameters.json`; the value is resolved from the PenPal/PI process environment and remains masked unless revelation is explicitly requested. The older `params set` path remains compatible, but sensitive values supplied there are stored as plaintext in the local workspace.
 
 ## Engagement Scope
 

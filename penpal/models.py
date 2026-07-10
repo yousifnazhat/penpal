@@ -1,11 +1,26 @@
 from __future__ import annotations
 
+import os
+import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
 
 SENSITIVE_EVIDENCE_TOKENS = ("credential", "password", "secret", "token", "key", "hash")
+ENV_VAR_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+
+class ParameterResolutionError(ValueError):
+    pass
+
+
+def normalize_environment_variable_name(value: str) -> str:
+    normalized = value.strip()
+    if not normalized or not ENV_VAR_RE.fullmatch(normalized):
+        raise ValueError(f"invalid environment variable name: {value}")
+    return normalized
 
 
 def utc_now() -> str:
@@ -169,26 +184,75 @@ class Parameter:
     value: str
     sensitive: bool = False
     source: str = "manual"
+    env_var: str = ""
+    resolved: bool = True
     created_at: str = field(default_factory=utc_now)
     updated_at: str = field(default_factory=utc_now)
 
+    def __post_init__(self) -> None:
+        if self.env_var:
+            self.env_var = normalize_environment_variable_name(self.env_var)
+            self.sensitive = True
+
     def to_dict(self, reveal: bool = True) -> dict[str, Any]:
+        if self.sensitive and not reveal:
+            value = "<sensitive>"
+        elif self.env_var and not self.resolved:
+            value = "<missing>"
+        else:
+            value = self.value
         return {
             "name": self.name,
-            "value": self.value if reveal or not self.sensitive else "<sensitive>",
+            "value": value,
+            "sensitive": self.sensitive,
+            "source": f"env:{self.env_var}" if self.env_var else self.source,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+    def to_storage_dict(self) -> dict[str, Any]:
+        data = {
+            "name": self.name,
             "sensitive": self.sensitive,
             "source": self.source,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
+        if self.env_var:
+            data["env_var"] = self.env_var
+        else:
+            data["value"] = self.value
+        return data
+
+    def require_value(self) -> str:
+        if self.env_var and not self.resolved:
+            raise ParameterResolutionError(f"environment variable {self.env_var} is not set for parameter {self.name}")
+        return self.value
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Parameter":
+    def from_dict(
+        cls,
+        data: dict[str, Any],
+        environment: Mapping[str, str] | None = None,
+    ) -> "Parameter":
+        raw_env_var = data.get("env_var", "")
+        if not isinstance(raw_env_var, str):
+            raise ValueError("parameter.env_var must be a string")
+        env_var = raw_env_var.strip()
+        if "env_var" in data and not env_var:
+            raise ValueError("parameter.env_var must not be empty")
+        if env_var and "value" in data:
+            raise ValueError(f"environment-backed parameter {data.get('name')} must not store a value")
+
+        values = os.environ if environment is None else environment
+        resolved = not env_var or env_var in values
         return cls(
             name=str(data["name"]),
-            value=str(data.get("value", "")),
-            sensitive=bool(data.get("sensitive", False)),
+            value=values.get(env_var, "") if env_var else str(data.get("value", "")),
+            sensitive=True if env_var else bool(data.get("sensitive", False)),
             source=str(data.get("source", "manual")),
+            env_var=env_var,
+            resolved=resolved,
             created_at=str(data.get("created_at") or utc_now()),
             updated_at=str(data.get("updated_at") or utc_now()),
         )

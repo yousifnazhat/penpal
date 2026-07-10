@@ -2,7 +2,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from penpal.models import Parameter, Service, Target
+from penpal.models import Parameter, ParameterResolutionError, Service, Target
 from penpal.service_modules import build_module_plan, module_matches_services, module_names
 
 
@@ -49,6 +49,26 @@ class ServiceModuleTests(unittest.TestCase):
         revealed_auth = next(command for command in revealed if command.id == "smb-auth-shares")
         self.assertIn("<known_password>", masked_auth.args)
         self.assertIn("Winter2024!", revealed_auth.args)
+
+    def test_revealed_module_plan_rejects_a_missing_environment_parameter(self) -> None:
+        target = Target(name="box", host="10.10.10.5")
+        services = [Service(port=445, protocol="tcp", name="microsoft-ds")]
+        params = {
+            "known_password": Parameter(
+                name="known_password",
+                value="",
+                env_var="PENPAL_MISSING_SECRET",
+                resolved=False,
+            )
+        }
+
+        with TemporaryDirectory() as temp_dir:
+            masked = build_module_plan("smb", target, Path(temp_dir), services, params)
+            with self.assertRaisesRegex(ParameterResolutionError, "PENPAL_MISSING_SECRET"):
+                build_module_plan("smb", target, Path(temp_dir), services, params, reveal_secrets=True)
+
+        masked_auth = next(command for command in masked if command.id == "smb-auth-shares")
+        self.assertIn("<known_password>", masked_auth.args)
 
     def test_web_module_matches_http_service(self) -> None:
         services = [Service(port=8080, protocol="tcp", name="http")]

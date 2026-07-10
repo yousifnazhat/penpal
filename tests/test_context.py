@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -15,6 +16,25 @@ password=Winter2024!
 
 
 class ContextTests(unittest.TestCase):
+    def test_environment_parameter_context_masks_runtime_value_and_preserves_contract(self) -> None:
+        secret = "Winter2024!"
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir, environment={"PENPAL_CONTEXT_SECRET": secret})
+            target = workspace.create_target("10.10.10.5", name="chain")
+            workspace.set_environment_parameter(target.name, "known_password", "PENPAL_CONTEXT_SECRET")
+
+            masked = build_context(workspace, target.name)
+            revealed = build_context(workspace, target.name, reveal_secrets=True)
+            stored = workspace.parameters_path(target.name).read_text(encoding="utf-8")
+
+        masked_password = next(item for item in masked["parameters"] if item["name"] == "known_password")
+        revealed_password = next(item for item in revealed["parameters"] if item["name"] == "known_password")
+        self.assertEqual(masked_password["value"], "<sensitive>")
+        self.assertEqual(masked_password["source"], "env:PENPAL_CONTEXT_SECRET")
+        self.assertEqual(revealed_password["value"], secret)
+        self.assertNotIn(secret, json.dumps(masked))
+        self.assertNotIn(secret, stored)
+
     def test_context_masks_sensitive_values_by_default(self) -> None:
         with TemporaryDirectory() as temp_dir:
             workspace = Workspace(temp_dir)

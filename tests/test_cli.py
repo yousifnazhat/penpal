@@ -1,9 +1,11 @@
 from contextlib import redirect_stdout
 from io import StringIO
 import json
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from penpal.cli import main
 from penpal.ingest import extract_evidence
@@ -20,6 +22,37 @@ email: daniel@example.local
 
 
 class CliTests(unittest.TestCase):
+    def test_set_env_parameter_resolves_without_writing_or_echoing_the_secret(self) -> None:
+        secret = "Winter2024!"
+        with TemporaryDirectory() as temp_dir, patch.dict(os.environ, {"PENPAL_CLI_SECRET": secret}):
+            Workspace(temp_dir).create_target("10.10.10.5", name="chain")
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                code = main(
+                    [
+                        "--workspace",
+                        temp_dir,
+                        "params",
+                        "chain",
+                        "set-env",
+                        "known_password",
+                        "PENPAL_CLI_SECRET",
+                    ]
+                )
+            masked = run_json(["--workspace", temp_dir, "params", "chain", "list", "--json"])
+            revealed = run_json(["--workspace", temp_dir, "params", "chain", "list", "--json", "--reveal-secrets"])
+            stored = (Path(temp_dir) / "targets" / "chain" / "parameters.json").read_text(encoding="utf-8")
+
+        output = stdout.getvalue()
+        password = next(item for item in revealed["parameters"] if item["name"] == "known_password")
+        masked_password = next(item for item in masked["parameters"] if item["name"] == "known_password")
+        self.assertEqual(code, 0)
+        self.assertIn("PENPAL_CLI_SECRET (available)", output)
+        self.assertNotIn(secret, output)
+        self.assertEqual(masked_password["value"], "<sensitive>")
+        self.assertEqual(password["value"], secret)
+        self.assertNotIn(secret, stored)
+
     def test_scope_commands_explain_allowed_and_blocked_hosts(self) -> None:
         with TemporaryDirectory() as temp_dir:
             configured = run_json(

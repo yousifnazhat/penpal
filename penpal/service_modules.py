@@ -361,7 +361,7 @@ def _render_context(
         if parameter.sensitive and not reveal_secrets:
             context[name] = f"<{name}>"
         else:
-            context[name] = parameter.value
+            context[name] = parameter.require_value()
     return context
 
 

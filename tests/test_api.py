@@ -10,11 +10,102 @@ from urllib.request import Request, urlopen
 
 from penpal.api import MAX_REQUEST_BODY_BYTES, _is_loopback_host, make_handler, serve
 from penpal.ingest import extract_evidence
-from penpal.models import Service
+from penpal.models import Evidence, Service
 from penpal.workspace import Workspace
 
 
 class ApiTests(unittest.TestCase):
+    def test_environment_parameter_api_never_persists_the_resolved_secret(self) -> None:
+        secret = "Winter2024!"
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir, environment={"PENPAL_API_SECRET": secret})
+            workspace.create_target("10.10.10.5", name="chain")
+            server, thread = _start_server(workspace)
+            try:
+                status, _, masked = _post_json(
+                    f"http://127.0.0.1:{server.server_port}/api/targets/chain/parameters",
+                    {"key": "known_password", "env_var": "PENPAL_API_SECRET"},
+                    origin="https://example.invalid",
+                )
+                revealed = _get_json(
+                    f"http://127.0.0.1:{server.server_port}/api/targets/chain/parameters?reveal_secrets=true"
+                )
+                stored = workspace.parameters_path("chain").read_text(encoding="utf-8")
+            finally:
+                _stop_server(server, thread)
+
+        parameter = next(item for item in revealed["parameters"] if item["name"] == "known_password")
+        self.assertEqual(status, 200)
+        self.assertEqual(masked["parameter"]["value"], "<sensitive>")
+        self.assertEqual(masked["parameter"]["source"], "env:PENPAL_API_SECRET")
+        self.assertEqual(parameter["value"], secret)
+        self.assertNotIn(secret, stored)
+        self.assertIn('"env_var": "PENPAL_API_SECRET"', stored)
+
+    def test_environment_parameter_api_rejects_invalid_or_ambiguous_references(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir, environment={})
+            workspace.create_target("10.10.10.5", name="chain")
+            server, thread = _start_server(workspace)
+            try:
+                invalid_status, _, invalid = _post_json(
+                    f"http://127.0.0.1:{server.server_port}/api/targets/chain/parameters",
+                    {"key": "known_password", "env_var": "INVALID-NAME"},
+                    origin="https://example.invalid",
+                )
+                ambiguous_status, _, ambiguous = _post_json(
+                    f"http://127.0.0.1:{server.server_port}/api/targets/chain/parameters",
+                    {"key": "known_password", "env_var": "PENPAL_SECRET", "value": "plaintext"},
+                    origin="https://example.invalid",
+                )
+            finally:
+                _stop_server(server, thread)
+
+        self.assertEqual(invalid_status, 400)
+        self.assertIn("invalid environment variable name", invalid["error"])
+        self.assertEqual(ambiguous_status, 400)
+        self.assertIn("value or env_var, not both", ambiguous["error"])
+
+    def test_api_rejects_explicit_substitution_when_environment_value_is_missing(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir, environment={})
+            target = workspace.create_target("10.10.10.5", name="chain")
+            workspace.merge_services(target.name, [Service(port=80, protocol="tcp", name="http")])
+            workspace.append_evidence(
+                target.name,
+                [
+                    Evidence(
+                        id="hostname-candidate",
+                        type="hostname",
+                        value="portal.example.test",
+                        source="test",
+                    )
+                ],
+            )
+            workspace.set_environment_parameter(target.name, "domain", "PENPAL_MISSING_DOMAIN")
+            server, thread = _start_server(workspace)
+            try:
+                masked_status, _, _ = _raw_request(
+                    server,
+                    "GET",
+                    "/api/targets/chain/suggestions",
+                    b"",
+                    {},
+                )
+                reveal_status, _, payload = _raw_request(
+                    server,
+                    "GET",
+                    "/api/targets/chain/suggestions?reveal_secrets=true",
+                    b"",
+                    {},
+                )
+            finally:
+                _stop_server(server, thread)
+
+        self.assertEqual(masked_status, 200)
+        self.assertEqual(reveal_status, 409)
+        self.assertIn("PENPAL_MISSING_DOMAIN", payload["error"])
+
     def test_target_creation_respects_configured_engagement_scope(self) -> None:
         with TemporaryDirectory() as temp_dir:
             workspace = Workspace(temp_dir)

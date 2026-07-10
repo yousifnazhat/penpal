@@ -12,6 +12,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 from .advisor import build_suggestions
 from .context import build_context
 from .ingest import extract_evidence
+from .models import ParameterResolutionError, normalize_environment_variable_name
 from .nmap_parser import NmapParseError, parse_nmap_xml
 from .scope import ScopeViolationError
 from .summary import render_summary
@@ -107,6 +108,8 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     self._json({"summary": render_summary(target, services)})
                 else:
                     self._json({"error": "not found"}, HTTPStatus.NOT_FOUND)
+            except ParameterResolutionError as exc:
+                self._json({"error": str(exc)}, HTTPStatus.CONFLICT)
             except ScopeViolationError as exc:
                 self._json({"error": str(exc)}, HTTPStatus.FORBIDDEN)
             except TargetNotFoundError as exc:
@@ -171,16 +174,31 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     workspace.require_target(path[2])
                     key = _required_text(body, "key")
                     reveal_secrets = _optional_bool(body, "reveal_secrets")
-                    parameter = workspace.set_parameter(
-                        path[2],
-                        key,
-                        _required_text(body, "value", allow_empty=True),
-                        sensitive=_optional_bool(body, "sensitive") or _looks_sensitive(key),
-                        source=_optional_text(body, "source", default="manual"),
-                    )
+                    if "env_var" in body:
+                        if "value" in body:
+                            raise ApiRequestError("parameter body must contain value or env_var, not both")
+                        try:
+                            env_var = normalize_environment_variable_name(_required_text(body, "env_var"))
+                        except ValueError as exc:
+                            raise ApiRequestError(str(exc)) from exc
+                        parameter = workspace.set_environment_parameter(
+                            path[2],
+                            key,
+                            env_var,
+                        )
+                    else:
+                        parameter = workspace.set_parameter(
+                            path[2],
+                            key,
+                            _required_text(body, "value", allow_empty=True),
+                            sensitive=_optional_bool(body, "sensitive") or _looks_sensitive(key),
+                            source=_optional_text(body, "source", default="manual"),
+                        )
                     self._json({"parameter": parameter.to_dict(reveal=reveal_secrets)})
                 else:
                     self._json({"error": "not found"}, HTTPStatus.NOT_FOUND)
+            except ParameterResolutionError as exc:
+                self._json({"error": str(exc)}, HTTPStatus.CONFLICT)
             except ScopeViolationError as exc:
                 self._json({"error": str(exc)}, HTTPStatus.FORBIDDEN)
             except TargetExistsError as exc:
