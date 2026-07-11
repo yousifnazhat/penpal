@@ -1,6 +1,6 @@
 ﻿# PenPal
 
-Authorized enumeration assistant for pentesters, with PenPal as the deterministic core and PI as the intended conversational cockpit.
+Authorized enumeration assistant for offensive security engineers, with PenPal as the deterministic core and PI as the intended conversational cockpit.
 
 PenPal is being designed as a product-quality tool, not just a lab script. The core idea is simple:
 
