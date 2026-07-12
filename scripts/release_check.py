@@ -8,6 +8,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 PYPI_PROJECT_NAME = "penpal-enum"
+NPM_ADAPTER_NAME = "@yousif_nazhat/penpal-pi"
 REQUIRED_FILES = (
     "CHANGELOG.md",
     "CONTRIBUTING.md",
@@ -38,9 +39,8 @@ def release_errors(expected_tag: str | None = None) -> list[str]:
     semver = semver_version(version)
     project_name = _match(ROOT / "pyproject.toml", r'^name = "([^"]+)"$')
     package_version = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["version"]
-    adapter_version = json.loads((ROOT / "packages" / "penpal-pi" / "package.json").read_text(encoding="utf-8"))[
-        "version"
-    ]
+    adapter_package = json.loads((ROOT / "packages" / "penpal-pi" / "package.json").read_text(encoding="utf-8"))
+    adapter_version = adapter_package["version"]
     module_version = _match(ROOT / "penpal" / "__init__.py", r'^__version__ = "([^"]+)"$')
 
     if project_name != PYPI_PROJECT_NAME:
@@ -51,6 +51,12 @@ def release_errors(expected_tag: str | None = None) -> list[str]:
         errors.append(f"package.json version is {package_version}, expected {semver}")
     if adapter_version != semver:
         errors.append(f"PI adapter version is {adapter_version}, expected {semver}")
+    if adapter_package["name"] != NPM_ADAPTER_NAME:
+        errors.append(f"PI adapter name is {adapter_package['name']}, expected {NPM_ADAPTER_NAME}")
+    if adapter_package.get("private") is True:
+        errors.append("PI adapter is marked private")
+    if adapter_package.get("publishConfig", {}).get("access") != "public":
+        errors.append("PI adapter publish access is not public")
     if expected_tag and expected_tag != f"v{semver}":
         errors.append(f"tag is {expected_tag}, expected v{semver}")
 

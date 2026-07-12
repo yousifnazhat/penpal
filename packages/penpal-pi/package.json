@@ -1,10 +1,12 @@
 {
   "name": "@yousif_nazhat/penpal-pi",
   "version": "0.2.0-rc.2",
-  "private": true,
   "description": "PI cockpit for the PenPal Python core.",
   "license": "MIT",
   "keywords": ["pi-package", "penpal"],
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=22.19.0"
   },
