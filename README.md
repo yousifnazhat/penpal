@@ -37,7 +37,7 @@ Run `/penpal-status` for a provider-free check that PI, PenPal, and the bundled 
 Use this path when your existing agent supports MCP rather than PI. Install the optional local server, then configure the client to start the shown command over stdio:
 
 ```bash
-python3 -m pip install ".[mcp]"
+python3 -m pip install "penpal-enum[mcp]"
 penpal --workspace penpal-workspace mcp
 ```
 
@@ -45,13 +45,13 @@ The MCP server has the same seven read-only workflows as the PI cockpit. It mask
 
 ### Use the Python core only
 
-The core works without PI. From a checkout, install it and create a target:
+The core works without PI. Install it and create a target:
 
 ```bash
-python3 -m pip install .
+python3 -m pip install penpal-enum
 penpal doctor
 penpal init 10.10.10.5 --name demo
-penpal parse-nmap demo examples/pi/demo-nmap.xml
+penpal parse-nmap demo ./scan.xml
 penpal suggest demo
 ```
 
