@@ -22,7 +22,7 @@ if ($LASTEXITCODE -ne 0) {
 
 function Install-Pi {
     Write-Host "Installing tested PI: $PiPackage"
-    & npm install --global --ignore-scripts $PiPackage
+    & npm.cmd install --global --ignore-scripts $PiPackage
     if ($LASTEXITCODE -ne 0) {
         throw "PI installation failed."
     }
