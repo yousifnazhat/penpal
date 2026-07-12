@@ -37,7 +37,9 @@ async def check() -> None:
                 Service(port=161, protocol="udp", name="snmp"),
             ],
         )
-        workspace.append_evidence(target.name, extract_evidence(f"User: daniel\npassword={SECRET}\n", source="smoke").evidence)
+        workspace.append_evidence(
+            target.name, extract_evidence(f"User: daniel\npassword={SECRET}\n", source="smoke").evidence
+        )
         workspace.set_parameter(target.name, "known_password", SECRET, sensitive=True)
 
         parameters = StdioServerParameters(
@@ -48,7 +50,7 @@ async def check() -> None:
             async with ClientSession(read_stream, write_stream) as session:
                 await session.initialize()
                 tools = await session.list_tools()
-                assert {tool.name for tool in tools} == EXPECTED_TOOLS
+                assert {tool.name for tool in tools.tools} == EXPECTED_TOOLS
 
                 context = await call(session, "penpal_context", {"target": target.name})
                 assert context["schema"] == "penpal-context-v1"

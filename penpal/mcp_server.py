@@ -37,6 +37,7 @@ def run_mcp(workspace: Workspace) -> None:
     @mcp.tool(name="penpal_suggest", annotations=READ_ONLY)
     def penpal_suggest(target: TargetName) -> str:
         """Read masked, deterministic next-step suggestions for one PenPal target."""
+
         def operation() -> dict[str, Any]:
             record = workspace.require_target(target)
             suggestions = build_suggestions(
@@ -58,6 +59,7 @@ def run_mcp(workspace: Workspace) -> None:
         offset: Annotated[int, Field(ge=0, description="Evidence items to skip")] = 0,
     ) -> str:
         """Read masked evidence for a target with offset pagination."""
+
         def operation() -> dict[str, Any]:
             workspace.require_target(target)
             evidence = [item.to_dict(reveal=False) for item in workspace.load_evidence(target)]
@@ -83,6 +85,7 @@ def run_mcp(workspace: Workspace) -> None:
     @mcp.tool(name="penpal_module_plan", annotations=READ_ONLY)
     def penpal_module_plan(target: TargetName, module: ModuleName) -> str:
         """Plan one masked, source-backed module without executing or writing commands."""
+
         def operation() -> dict[str, Any]:
             record = workspace.require_target(target)
             services = workspace.load_services(record.name)
@@ -110,7 +113,9 @@ def _read(operation: Callable[[], dict[str, Any]]) -> str:
     try:
         return _render(operation())
     except (WorkspaceError, ValueError) as exc:
-        return _render({"error": str(exc), "next_step": "Check the target name and run penpal doctor for local diagnostics."})
+        return _render(
+            {"error": str(exc), "next_step": "Check the target name and run penpal doctor for local diagnostics."}
+        )
 
 
 def _evidence_page(target: str, evidence: list[dict[str, Any]], limit: int, offset: int) -> dict[str, Any]:
