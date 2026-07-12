@@ -5,7 +5,7 @@ This PI package adds PenPal's seven read-only, masked workspace tools to PI.
 Install the PenPal Python core first, then install this release candidate in PI:
 
 ```bash
-python3 -m pip install --pre penpal-enum
+python3 -m pip install penpal-enum
 pi install npm:@yousif_nazhat/penpal-pi@0.2.0-rc.2
 ```
 
