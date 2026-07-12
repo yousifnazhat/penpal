@@ -1,0 +1,42 @@
+name: Beta feedback
+description: Tell us what was useful, confusing, or incorrect in an authorized PenPal workflow.
+title: "Beta: "
+labels: ["beta-feedback"]
+body:
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Workflow used
+      options:
+        - Python CLI
+        - PI cockpit
+        - MCP server
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What happened?
+      description: Include what worked, what was confusing, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Safe reproduction
+      description: Share the smallest redacted command sequence or sample tool output that demonstrates the result.
+  - type: textarea
+    id: doctor
+    attributes:
+      label: PenPal doctor
+      description: Paste `penpal doctor --json` after removing engagement data.
+      render: json
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety
+      options:
+        - label: I used this only with authorization.
+          required: true
+        - label: I removed targets, credentials, tokens, and other sensitive assessment data.
+          required: true
