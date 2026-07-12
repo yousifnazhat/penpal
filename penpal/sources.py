@@ -14,8 +14,8 @@ from urllib.request import Request, urlopen
 SOURCE_SEEDS_SCHEMA = "penpal-source-seeds-v1"
 SOURCE_FETCH_SCHEMA = "penpal-source-fetch-v1"
 SOURCE_FACTS_SCHEMA = "penpal-reviewed-source-facts-v1"
-DEFAULT_SEEDS_PATH = Path(__file__).resolve().parents[1] / "docs" / "SOURCE_SEEDS.json"
-DEFAULT_FACTS_PATH = Path(__file__).resolve().parents[1] / "docs" / "SOURCE_FACTS.json"
+DEFAULT_SEEDS_PATH = Path(__file__).with_name("data") / "SOURCE_SEEDS.json"
+DEFAULT_FACTS_PATH = Path(__file__).with_name("data") / "SOURCE_FACTS.json"
 DEFAULT_CACHE_DIR = Path(".penpal-source-cache")
 MAX_SOURCE_BYTES = 2_000_000
 MAX_EXTRACTED_FACTS = 12

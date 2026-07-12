@@ -13,6 +13,6 @@
     "typebox": "*"
   },
   "pi": {
-    "extensions": ["./examples/pi/penpal-extension.example.ts"]
+    "extensions": ["./.pi/penpal-extension.ts"]
   }
 }

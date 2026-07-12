@@ -12,7 +12,7 @@ from penpal.workspace import Workspace
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EVALS_PATH = ROOT / "docs" / "EVAL_CASES.json"
+EVALS_PATH = ROOT / "tests" / "fixtures" / "evals" / "cases.json"
 
 
 class EvalCaseTests(unittest.TestCase):

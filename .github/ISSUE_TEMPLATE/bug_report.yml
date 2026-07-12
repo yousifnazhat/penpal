@@ -25,6 +25,12 @@ body:
       label: Expected behavior
     validations:
       required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: PenPal doctor
+      description: Paste `penpal doctor --json` output after removing target names, paths, or other engagement data.
+      render: json
   - type: checkboxes
     id: safety
     attributes:

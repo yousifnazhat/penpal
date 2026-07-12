@@ -34,6 +34,8 @@ python3 -m penpal playbooks playbooks --show snmp-mail-remote
 
 Use `python3 scripts/check.py` instead of `make check` on systems without Make.
 
+Public compatibility rules are documented in `SUPPORT.md`. Deprecate a v1 path before removing it unless an urgent security fix requires otherwise, and update `CHANGELOG.md` for user-visible behavior.
+
 Changes to the PI package or extension must also pass the model-free offline harness check with the PI version pinned in `.pi-version`:
 
 ```bash

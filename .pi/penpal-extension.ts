@@ -4,10 +4,9 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { Type } from "typebox";
-import { registerPenpalIngestTool } from "./penpal-ingest-tool.example";
 
 const execFileAsync = promisify(execFile);
-const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const cwd = process.env.PENPAL_CWD ?? packageRoot;
 const python = process.env.PENPAL_PYTHON ?? "python3";
 const workspace = process.env.PENPAL_WORKSPACE;
@@ -22,8 +21,6 @@ const readOnlyTools = [
 ];
 
 export default function (pi: ExtensionAPI) {
-  registerPenpalIngestTool(pi);
-
   pi.registerTool({
     name: "penpal_context",
     label: "PenPal context",

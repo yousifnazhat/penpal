@@ -76,7 +76,10 @@ jobs:
           python -m venv "$RUNNER_TEMP/penpal-wheel"
           "$RUNNER_TEMP/penpal-wheel/bin/python" -m pip install dist/*.whl
           cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/penpal-wheel/bin/penpal" --version
+          "$RUNNER_TEMP/penpal-wheel/bin/penpal" doctor --json
           "$RUNNER_TEMP/penpal-wheel/bin/penpal" playbooks playbooks
+          "$RUNNER_TEMP/penpal-wheel/bin/penpal" sources list
           "$RUNNER_TEMP/penpal-wheel/bin/penpal" --help
       - uses: actions/upload-artifact@v6
         with:
