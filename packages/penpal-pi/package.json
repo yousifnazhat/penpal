@@ -1,6 +1,6 @@
 {
   "name": "@yousifnazhat/penpal-pi",
-  "version": "0.2.0-rc.1",
+  "version": "0.2.0-rc.2",
   "private": true,
   "description": "PI cockpit for the PenPal Python core.",
   "license": "MIT",

@@ -188,7 +188,7 @@ def _resolve_playbook_path(path: str | Path) -> Path:
         return root
 
     try:
-        files = distribution("penpal").files or []
+        files = distribution("penpal-enum").files or []
     except PackageNotFoundError:
         return root
 

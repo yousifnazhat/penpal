@@ -731,7 +731,7 @@ def cmd_mcp(args: argparse.Namespace, workspace: Workspace) -> int:
         from .mcp_server import run_mcp
     except ModuleNotFoundError as exc:
         if exc.name in {"mcp", "pydantic"}:
-            raise ValueError('MCP support is not installed; run: python -m pip install "penpal[mcp]"') from exc
+            raise ValueError('MCP support is not installed; run: python -m pip install "penpal-enum[mcp]"') from exc
         raise
     run_mcp(workspace)
     return 0

@@ -4,12 +4,18 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 ## [Unreleased]
 
+## [0.2.0-rc.2] - 2026-07-12
+
 ### Added
 
 - V1 support, compatibility, deprecation, and security policies.
 - Self-diagnosing `penpal doctor` command and automated release checks.
 - Optional read-only MCP server with a stdio integration harness.
 - Package-ready PI adapter and beta feedback issue form.
+
+### Changed
+
+- Changed the Python distribution name to `penpal-enum` while preserving the `penpal` command.
 
 ## [0.2.0-rc.1] - 2026-07-12
 
@@ -39,7 +45,8 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 - Initial deterministic core, workspace, playbooks, CLI/API, and project-local PI cockpit.
 
-[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v0.2.0-rc.1...HEAD
+[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v0.2.0-rc.2...HEAD
+[0.2.0-rc.2]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.2
 [0.2.0-rc.1]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.1
 [0.1.1-rc.1]: https://github.com/yousifnazhat/penpal/releases/tag/v0.1.1-rc.1
 [0.1.0]: https://github.com/yousifnazhat/penpal/releases/tag/v0.1.0
