@@ -1,14 +1,16 @@
 import { execFileSync, spawn } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { delimiter, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const adapterRoot = join(root, "packages", "penpal-pi");
 const expectedVersion = readFileSync(join(root, ".pi-version"), "utf8").trim();
 const piBin = process.env.PI_BIN ?? (process.platform === "win32" ? "pi.cmd" : "pi");
 const allowVersionMismatch = /^(1|true|yes)$/i.test(process.env.PI_ALLOW_VERSION_MISMATCH ?? "");
 const configDir = mkdtempSync(join(tmpdir(), "penpal-pi-check-"));
+const adapterProject = mkdtempSync(join(tmpdir(), "penpal-pi-adapter-"));
 const env = {
   ...process.env,
   PENPAL_CWD: root,
@@ -18,41 +20,56 @@ const env = {
   PI_TELEMETRY: "0",
 };
 delete env.PENPAL_WORKSPACE;
+const adapterEnv = {
+  ...env,
+  PENPAL_CWD: process.env.CI ? adapterProject : root,
+  PI_CODING_AGENT_DIR: mkdtempSync(join(tmpdir(), "penpal-pi-adapter-check-")),
+  ...(process.env.CI ? {} : { PYTHONPATH: [root, process.env.PYTHONPATH].filter(Boolean).join(delimiter) }),
+};
 
 try {
-  const installedVersion = runPi(["--version"]).trim();
+  const installedVersion = runPi(["--version"], root, env).trim();
   if (installedVersion !== expectedVersion && !allowVersionMismatch) {
     throw new Error(`expected PI ${expectedVersion}, found ${installedVersion}`);
   }
   console.log(`PI version: ${installedVersion}${installedVersion === expectedVersion ? "" : " (compatibility mode)"}`);
 
-  const listed = runPi(["list", "--approve"]);
-  if (!listed.includes("Project packages:") || !listed.includes("../")) {
-    throw new Error(`PenPal project package was not discovered:\n${listed}`);
-  }
-  console.log("PI project package: discovered");
+  await checkProjectPackage("checkout package", root, env, "../");
 
-  await checkRpc();
-  console.log("PI offline RPC harness: passed");
+  mkdirSync(join(adapterProject, ".pi"));
+  writeFileSync(join(adapterProject, ".pi", "settings.json"), JSON.stringify({ packages: [adapterRoot] }) + "\n");
+  await checkProjectPackage("adapter package", adapterProject, adapterEnv, adapterRoot);
 } finally {
   rmSync(configDir, { recursive: true, force: true });
+  rmSync(adapterEnv.PI_CODING_AGENT_DIR, { recursive: true, force: true });
+  rmSync(adapterProject, { recursive: true, force: true });
 }
 
-function runPi(args) {
+async function checkProjectPackage(label, projectRoot, projectEnv, packageMarker) {
+  const listed = runPi(["list", "--approve"], projectRoot, projectEnv);
+  if (!listed.includes("Project packages:") || !listed.includes(packageMarker)) {
+    throw new Error(`${label} was not discovered:\n${listed}`);
+  }
+  console.log(`PI ${label}: discovered`);
+  await checkRpc(projectRoot, projectEnv);
+  console.log(`PI ${label} RPC harness: passed`);
+}
+
+function runPi(args, cwd, processEnv) {
   return execFileSync(piBin, args, {
-    cwd: root,
+    cwd,
     encoding: "utf8",
-    env,
+    env: processEnv,
     shell: process.platform === "win32",
     timeout: 20_000,
   });
 }
 
-function checkRpc() {
+function checkRpc(cwd, processEnv) {
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(piBin, ["--mode", "rpc", "--no-session", "--approve", "--offline"], {
-      cwd: root,
-      env,
+      cwd,
+      env: processEnv,
       shell: process.platform === "win32",
       stdio: ["pipe", "pipe", "pipe"],
     });

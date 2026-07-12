@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: build check demo format lint pi-check playbooks test
+.PHONY: build check demo format lint pi-check playbooks release-check test
 
 build:
 	$(PYTHON) -m build
@@ -24,6 +24,9 @@ pi-check:
 
 playbooks:
 	$(PYTHON) -m penpal playbooks playbooks
+
+release-check:
+	$(PYTHON) scripts/release_check.py
 
 test:
 	$(PYTHON) -m unittest discover -v

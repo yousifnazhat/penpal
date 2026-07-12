@@ -4,7 +4,7 @@ PenPal is intended for authorized red-team, lab, and owned-environment use.
 
 ## Reporting security issues
 
-Please open a private report or contact the maintainer before publishing exploit details for PenPal itself.
+Use GitHub private vulnerability reporting when available, or contact the maintainer before publishing exploit details for PenPal itself. Do not include real engagement data, credentials, or target identifiers.
 
 ## Project safety expectations
 

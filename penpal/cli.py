@@ -6,9 +6,11 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from . import __version__
 from .advisor import build_suggestions
 from .api import serve
 from .context import build_context
+from .doctor import build_doctor_report, format_doctor_report
 from .ingest import extract_evidence
 from .nmap_parser import NmapParseError, parse_nmap_xml
 from .playbooks import find_playbook, format_playbook, load_playbooks, scan_notes_vault, scan_playbooks
@@ -45,12 +47,17 @@ def main(argv: list[str] | None = None) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="penpal", description="PenPal enumeration assistant.")
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
         "--workspace",
         default=DEFAULT_WORKSPACE,
         help=f"Workspace root. Default: {DEFAULT_WORKSPACE}",
     )
     subcommands = parser.add_subparsers(dest="command", required=True)
+
+    doctor_cmd = subcommands.add_parser("doctor", help="Check the local PenPal and PI environment.")
+    doctor_cmd.add_argument("--json", action="store_true", help="Emit machine-readable diagnostics.")
+    doctor_cmd.set_defaults(func=cmd_doctor)
 
     init_cmd = subcommands.add_parser("init", help="Create a target workspace.")
     init_cmd.add_argument("host", help="Target IP, hostname, or lab name.")
@@ -227,7 +234,7 @@ def build_parser() -> argparse.ArgumentParser:
     sources_reviewed_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     sources_reviewed_cmd.set_defaults(func=cmd_sources_reviewed)
 
-    serve_cmd = subcommands.add_parser("serve", help="Start the JSON API for a future frontend.")
+    serve_cmd = subcommands.add_parser("serve", help="Start the JSON API for local integrations.")
     serve_cmd.add_argument("--host", default="127.0.0.1")
     serve_cmd.add_argument("--port", type=int, default=8765)
     serve_cmd.add_argument(
@@ -237,7 +244,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     serve_cmd.set_defaults(func=cmd_serve)
 
+    mcp_cmd = subcommands.add_parser("mcp", help="Run the read-only local MCP server over stdio.")
+    mcp_cmd.set_defaults(func=cmd_mcp)
+
     return parser
+
+
+def cmd_doctor(args: argparse.Namespace, workspace: Workspace) -> int:
+    report = build_doctor_report(workspace)
+    print(json.dumps(report, indent=2) if args.json else format_doctor_report(report))
+    return 1 if report["status"] == "error" else 0
 
 
 def cmd_init(args: argparse.Namespace, workspace: Workspace) -> int:
@@ -707,6 +723,17 @@ def cmd_sources_reviewed(args: argparse.Namespace, workspace: Workspace) -> int:
 def cmd_serve(args: argparse.Namespace, workspace: Workspace) -> int:
     workspace.ensure()
     serve(workspace, host=args.host, port=args.port, allow_remote=args.allow_remote)
+    return 0
+
+
+def cmd_mcp(args: argparse.Namespace, workspace: Workspace) -> int:
+    try:
+        from .mcp_server import run_mcp
+    except ModuleNotFoundError as exc:
+        if exc.name in {"mcp", "pydantic"}:
+            raise ValueError('MCP support is not installed; run: python -m pip install "penpal[mcp]"') from exc
+        raise
+    run_mcp(workspace)
     return 0
 
 

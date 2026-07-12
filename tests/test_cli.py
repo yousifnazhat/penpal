@@ -22,6 +22,68 @@ email: daniel@example.local
 
 
 class CliTests(unittest.TestCase):
+    def test_doctor_reports_supported_environment_without_modifying_workspace(self) -> None:
+        with (
+            TemporaryDirectory() as temp_dir,
+            patch("penpal.doctor.sys.version_info", (3, 12)),
+            patch("penpal.doctor.platform.python_version", return_value="3.12.0"),
+            patch("penpal.doctor.shutil.which", return_value=None),
+        ):
+            workspace = Workspace(temp_dir)
+            workspace.set_scope(["10.10.10.0/24"])
+            workspace.create_target("10.10.10.5", name="chain")
+
+            report = run_json(["--workspace", temp_dir, "doctor", "--json"])
+
+        checks = {check["name"]: check for check in report["checks"]}
+        self.assertEqual(report["schema"], "penpal-doctor-v1")
+        self.assertEqual(report["status"], "warning")
+        self.assertEqual(checks["workspace"]["status"], "ok")
+        self.assertEqual(checks["pi"]["status"], "warning")
+
+    def test_doctor_returns_json_error_for_invalid_workspace_schema(self) -> None:
+        with (
+            TemporaryDirectory() as temp_dir,
+            patch("penpal.doctor.sys.version_info", (3, 12)),
+            patch("penpal.doctor.platform.python_version", return_value="3.12.0"),
+            patch("penpal.doctor.shutil.which", return_value=None),
+        ):
+            workspace = Workspace(temp_dir)
+            target = workspace.create_target("10.10.10.5", name="chain")
+            workspace.services_path(target.name).write_text('{"schema":"penpal-services-v99"}', encoding="utf-8")
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                code = main(["--workspace", temp_dir, "doctor", "--json"])
+
+        report = json.loads(stdout.getvalue())
+        workspace_check = next(check for check in report["checks"] if check["name"] == "workspace")
+        self.assertEqual(code, 1)
+        self.assertEqual(report["status"], "error")
+        self.assertEqual(workspace_check["status"], "error")
+        self.assertIn("Unsupported storage schema", workspace_check["message"])
+
+    def test_doctor_warns_without_exposing_plaintext_or_missing_environment_secrets(self) -> None:
+        secret = "Winter2024!"
+        with (
+            TemporaryDirectory() as temp_dir,
+            patch("penpal.doctor.sys.version_info", (3, 12)),
+            patch("penpal.doctor.platform.python_version", return_value="3.12.0"),
+            patch("penpal.doctor.shutil.which", return_value=None),
+        ):
+            workspace = Workspace(temp_dir, environment={})
+            target = workspace.create_target("10.10.10.5", name="chain")
+            workspace.set_parameter(target.name, "known_password", secret, sensitive=True)
+            workspace.set_environment_parameter(target.name, "api_token", "PENPAL_API_TOKEN")
+
+            report = run_json(["--workspace", temp_dir, "doctor", "--json"])
+
+        body = json.dumps(report)
+        workspace_check = next(check for check in report["checks"] if check["name"] == "workspace")
+        self.assertEqual(workspace_check["status"], "warning")
+        self.assertIn("1 plaintext sensitive parameter(s)", workspace_check["message"])
+        self.assertIn("1 missing environment variable(s)", workspace_check["message"])
+        self.assertNotIn(secret, body)
+
     def test_set_env_parameter_resolves_without_writing_or_echoing_the_secret(self) -> None:
         secret = "Winter2024!"
         with TemporaryDirectory() as temp_dir, patch.dict(os.environ, {"PENPAL_CLI_SECRET": secret}):

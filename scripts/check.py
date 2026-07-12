@@ -9,6 +9,7 @@ CHECKS = (
     (sys.executable, "-m", "ruff", "format", "--check", "."),
     (sys.executable, "-m", "unittest", "discover", "-v"),
     (sys.executable, "-m", "penpal", "playbooks", "playbooks"),
+    (sys.executable, "scripts/release_check.py"),
 )
 
 

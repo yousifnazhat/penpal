@@ -1,12 +1,12 @@
-from pathlib import Path
 import json
 import unittest
+
+from penpal.sources import DEFAULT_SEEDS_PATH
 
 
 class SourceSeedTests(unittest.TestCase):
     def test_source_seeds_are_well_formed(self) -> None:
-        path = Path(__file__).resolve().parents[1] / "docs" / "SOURCE_SEEDS.json"
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(DEFAULT_SEEDS_PATH.read_text(encoding="utf-8"))
 
         self.assertEqual(data["schema"], "penpal-source-seeds-v1")
         seen_ids: set[str] = set()

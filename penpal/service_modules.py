@@ -299,7 +299,6 @@ def build_module_plan(
 ) -> list[PlannedModuleCommand]:
     module = get_module(module_name)
     module_dir = target_dir / "modules" / module.name
-    module_dir.mkdir(parents=True, exist_ok=True)
     context = _render_context(target, module, module_dir, services, parameters, reveal_secrets)
 
     plan: list[PlannedModuleCommand] = []
