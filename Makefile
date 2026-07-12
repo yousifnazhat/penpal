@@ -1,6 +1,9 @@
 PYTHON ?= python3
 
-.PHONY: check demo format lint pi-check playbooks test
+.PHONY: build check demo format lint pi-check playbooks test
+
+build:
+	$(PYTHON) -m build
 
 check:
 	$(PYTHON) scripts/check.py
