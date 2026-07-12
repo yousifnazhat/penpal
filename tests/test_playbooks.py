@@ -200,8 +200,9 @@ class CommunityPlaybookTests(unittest.TestCase):
         installed_entry.locate.return_value = Path("/installed/share/penpal/playbooks/snmp-mail-remote.json")
         installed_distribution = unittest.mock.Mock(files=[installed_entry])
 
-        with patch("penpal.playbooks.Path.exists", return_value=False), patch(
-            "penpal.playbooks.distribution", return_value=installed_distribution
+        with (
+            patch("penpal.playbooks.Path.exists", return_value=False),
+            patch("penpal.playbooks.distribution", return_value=installed_distribution),
         ):
             from penpal.playbooks import _resolve_playbook_path
 
