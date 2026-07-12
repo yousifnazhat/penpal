@@ -202,13 +202,14 @@ class CommunityPlaybookTests(unittest.TestCase):
 
         with (
             patch("penpal.playbooks.Path.exists", return_value=False),
-            patch("penpal.playbooks.distribution", return_value=installed_distribution),
+            patch("penpal.playbooks.distribution", return_value=installed_distribution) as distribution_lookup,
         ):
             from penpal.playbooks import _resolve_playbook_path
 
             resolved = _resolve_playbook_path("playbooks")
 
         self.assertEqual(resolved, Path("/installed/share/penpal/playbooks"))
+        distribution_lookup.assert_called_once_with("penpal-enum")
 
     def test_find_and_format_playbook(self) -> None:
         playbook = find_playbook([PLAYBOOK], "snmp-mail-remote")
