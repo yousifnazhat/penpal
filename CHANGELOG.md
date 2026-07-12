@@ -11,7 +11,7 @@ Notable changes follow Keep a Changelog and semantic versioning.
 - V1 support, compatibility, deprecation, and security policies.
 - Self-diagnosing `penpal doctor` command and automated release checks.
 - Optional read-only MCP server with a stdio integration harness.
-- Package-ready PI adapter and beta feedback issue form.
+- Public npm PI adapter and beta feedback issue form.
 
 ### Changed
 
