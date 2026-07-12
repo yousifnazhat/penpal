@@ -35,6 +35,18 @@ The extension exposes:
 - `penpal_modules_list`
 - `penpal_module_plan`
 
+It also registers `/penpal-status`, a provider-free diagnostic that verifies all seven read-only tools and asks the Python core to validate bundled playbooks.
+
+## Offline harness smoke
+
+The setup script runs this automatically. Maintainers can rerun it without a provider login or network access:
+
+```bash
+node scripts/check-pi.mjs
+```
+
+The check verifies the version in `.pi-version`, project-package discovery, RPC extension loading, `/penpal-status`, all seven read-only tools, and the Python playbook validator.
+
 ## Read-only smoke tests
 
 Run these from the repository root after PI login. `--no-builtin-tools` proves PI is using the PenPal extension tool, not shell fallback.

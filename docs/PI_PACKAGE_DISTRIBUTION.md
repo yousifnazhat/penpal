@@ -4,7 +4,7 @@ Status: planning only. PenPal does not publish an npm PI package or a PyPI packa
 
 ## Current supported path
 
-The repository root is a private PI package. `.pi/settings.json` loads it from the local checkout, and the extension runs the Python core and bundled playbooks from that same checkout. This is the supported downloaded-repository experience.
+The repository root is a private PI package. `.pi/settings.json` loads it from the local checkout, and the extension runs the Python core and bundled playbooks from that same checkout. This is the supported downloaded-repository experience. `.pi-version` pins the tested PI release, while `scripts/check-pi.mjs` proves package discovery and extension registration offline.
 
 The current `package.json` deliberately uses `penpal-pi@0.0.0` with `private: true`. It is not a candidate for publication as-is.
 
@@ -38,6 +38,7 @@ Before any npm publication, all of these must pass from a clean temporary direct
 
 ```text
 npm pack --dry-run
+node scripts/check-pi.mjs
 python -m pip install <published PenPal core version>
 pi install -l npm:<verified scope>/<verified package>@<version>
 pi --no-builtin-tools --tools penpal_context ...

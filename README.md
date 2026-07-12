@@ -50,6 +50,8 @@ Use PenPal to summarize target demo and recommend next checks.
 
 The demo writes to `penpal-workspace/`, which is ignored by Git.
 
+On Windows PowerShell, use `./scripts/setup-pi.ps1` instead. Both setup scripts install the exact PI version in `.pi-version` when PI is missing, then run a provider-free offline compatibility smoke.
+
 For contributor checks, install the pinned development tools and run the complete local gate:
 
 ```bash
@@ -78,7 +80,7 @@ EOF
 python -m penpal evidence nibbles
 python -m penpal params nibbles set community public
 python -m penpal params nibbles set known_user daniel
-python -m penpal params nibbles set known_password "Winter2024!" --sensitive
+python -m penpal params nibbles set-env known_password PENPAL_KNOWN_PASSWORD
 python -m penpal suggest nibbles
 python -m penpal context nibbles --json
 python -m penpal summary nibbles --write
@@ -88,7 +90,7 @@ python -m penpal playbooks playbooks --show snmp-mail-remote
 
 ### PI cockpit
 
-PI is the intended conversational layer for v1. After creating demo data, install or verify PI from the downloaded repository:
+PI is the intended conversational layer for v1. It currently requires Node.js 22.19.0 or newer and npm. After creating demo data, install or verify PI from the downloaded repository:
 
 ```bash
 ./scripts/setup-pi.sh
@@ -97,7 +99,9 @@ pi
 
 Run `/login` inside PI if it asks for a provider login. On first launch, approve the project-local files when PI prompts; `.pi/settings.json` loads the PenPal PI package from this repository so the PenPal tools are available in the conversation.
 
-The setup script installs PI globally through npm as `@earendil-works/pi-coding-agent` when the `pi` command is missing. It never handles provider tokens or API keys. The PI extension reads the same masked PenPal context and suggestions as the CLI. Forced-tool smoke tests live in [PI Example](examples/pi/README.md).
+The setup script installs the PI version pinned in `.pi-version` globally through npm when the `pi` command is missing. If another PI version is already installed, PenPal keeps it and runs the same compatibility smoke; set `PI_FORCE_INSTALL=1` to replace it with the tested version. The script never handles provider tokens or API keys.
+
+Run `/penpal-status` inside PI for a model-free check that the project package, seven read-only tools, Python core, and playbooks are connected. The extension reads the same masked PenPal context and suggestions as the CLI. Forced-tool smoke tests live in [PI Example](examples/pi/README.md).
 
 Suggestions include copy-ready syntax with the target host filled in where possible. Values the tool cannot know yet stay explicit:
 
@@ -115,7 +119,7 @@ You can fill placeholders with target parameters:
 ```powershell
 python -m penpal params nibbles set community public
 python -m penpal params nibbles set known_user daniel
-python -m penpal params nibbles set known_password "Winter2024!" --sensitive
+python -m penpal params nibbles set-env known_password PENPAL_KNOWN_PASSWORD
 python -m penpal params nibbles list
 python -m penpal suggest nibbles
 
