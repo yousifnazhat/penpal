@@ -20,7 +20,7 @@ class ServiceModuleTests(unittest.TestCase):
             plan = build_module_plan("snmp", target, target_dir, services, params)
             walk = next(command for command in plan if command.id == "snmp-walk")
 
-            self.assertTrue((target_dir / "modules" / "snmp").is_dir())
+            self.assertFalse((target_dir / "modules" / "snmp").exists())
             self.assertEqual(Path(walk.cwd).name, "snmp")
             self.assertIn("public", walk.args)
             self.assertEqual(walk.service_key, "udp/161")
