@@ -29,9 +29,12 @@ Use this before cutting a public contributor-ready PenPal prerelease.
 
 ## Current Evidence
 
-Last local verification: 2026-07-10.
+Last local verification: 2026-07-12.
 
-- `make check`: Ruff lint/format passed, 53 tests passed, and 4 playbooks validated.
+- Ruff lint/format passed, 84 tests passed, and 4 playbooks validated.
+- CI builds wheel and source distributions, installs the wheel outside the checkout, and validates bundled playbooks.
+- CI passes on Python 3.11, 3.12, and 3.13 across Linux, macOS, and Windows.
+- PI `0.80.6` offline RPC smoke passes on Linux and Windows from the native setup scripts.
 - `python3 -m penpal playbooks playbooks`: 4 valid playbooks, 0 invalid.
 - GitHub CI passed on Python 3.11 for merge commit `a5a68f9`.
 - `./scripts/setup-pi.sh`: verified the local PI command and printed the PenPal extension launch path.
@@ -49,11 +52,11 @@ Local note: this workstation exposes `python3` as Python 3.9.6 and has no `pytho
 
 ## Release
 
-- Package version: `0.1.1rc1`
-- Tag: `v0.1.1-rc.1`
-- GitHub Release: https://github.com/yousifnazhat/penpal/releases/tag/v0.1.1-rc.1
+- Package version: `0.2.0rc1`
+- Tag: `v0.2.0-rc.1`
+- GitHub Release: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.1
 - Release notes: [Release Notes](RELEASE_NOTES.md)
-- Next step: collect onboarding friction before expanding distribution or adapter surfaces.
+- Next step: collect onboarding friction and verify PyPI/npm ownership before registry publication.
 
 ## Manual smoke test
 

@@ -1,6 +1,6 @@
 # PI Package Distribution Plan
 
-Status: planning only. PenPal does not publish an npm PI package or a PyPI package yet.
+Status: Python wheel and source artifacts are built and smoke-tested in CI. PenPal does not publish to npm or PyPI yet.
 
 ## Current supported path
 
@@ -8,15 +8,15 @@ The repository root is a private PI package. `.pi/settings.json` loads it from t
 
 The current `package.json` deliberately uses `penpal-pi@0.0.0` with `private: true`. It is not a candidate for publication as-is.
 
-## Why publication waits
+## Why registry publication waits
 
 PI can install npm packages globally or project-locally, but PenPal's extension needs a compatible Python core, its playbooks, and an operator-owned workspace. A published npm package must not quietly put target data inside its installation directory or rely on a hidden clone of the repository.
 
 `npm pack --dry-run --json` on 2026-07-09 confirmed that the current root manifest would ship CI configuration, documentation, tests, and the repository-local PI setting. That is useful evidence that the current root package is for local development, not distribution.
 
-## Recommended distribution shape
+## Distribution shape
 
-1. Make the Python `penpal` core independently installable and versioned first.
+1. The Python `penpal` core is independently installable, versioned, and ships validated playbooks.
 2. Publish a separate, scoped npm PI adapter package after the maintainer verifies ownership of the npm scope and package name.
 3. Have the adapter run the installed Python core through an explicit Python executable configuration, with an operator-selected workspace outside the npm installation directory.
 4. Keep the npm adapter and Python core on the same documented compatibility range. The adapter must fail clearly when the compatible core is absent.
@@ -50,4 +50,4 @@ PI package installation details are documented in the official [PI packages guid
 
 ## Next decision
 
-The next implementation decision is Python-core distribution: decide whether the maintainer wants a public PyPI release or a different approved installation channel. That choice determines the adapter's core discovery and compatibility contract. No npm publication should happen before it is made.
+Verify ownership and publishing credentials for a public PyPI project before enabling trusted publishing. Then select and verify a scoped npm adapter name. No registry publication should be simulated or performed with an unverified namespace.

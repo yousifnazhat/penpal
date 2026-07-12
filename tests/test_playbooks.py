@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 import json
 import re
 
@@ -192,6 +193,22 @@ class CommunityPlaybookTests(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 load_playbooks(root)
+
+    def test_default_playbooks_fall_back_to_installed_data(self) -> None:
+        installed_entry = unittest.mock.Mock()
+        installed_entry.parts = ("..", "share", "penpal", "playbooks", "snmp-mail-remote.json")
+        installed_entry.locate.return_value = Path("/installed/share/penpal/playbooks/snmp-mail-remote.json")
+        installed_distribution = unittest.mock.Mock(files=[installed_entry])
+
+        with (
+            patch("penpal.playbooks.Path.exists", return_value=False),
+            patch("penpal.playbooks.distribution", return_value=installed_distribution),
+        ):
+            from penpal.playbooks import _resolve_playbook_path
+
+            resolved = _resolve_playbook_path("playbooks")
+
+        self.assertEqual(resolved, Path("/installed/share/penpal/playbooks"))
 
     def test_find_and_format_playbook(self) -> None:
         playbook = find_playbook([PLAYBOOK], "snmp-mail-remote")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from importlib.metadata import PackageNotFoundError, distribution
 import json
 from pathlib import Path
 import re
@@ -24,6 +25,7 @@ FENCED_JSON_RE = re.compile(r"^```(?:json)?\s*\n(?P<body>[\s\S]*?)\n```\s*$", re
 PLAYBOOK_SCHEMA = "penpal-playbook-v1"
 PLAYBOOK_RISKS = {"passive", "normal", "aggressive", "approval_required"}
 SERVICE_SIGNAL_TYPES = {"service", "service_any"}
+DEFAULT_PLAYBOOKS_PATH = Path("playbooks")
 
 
 @dataclass
@@ -146,7 +148,7 @@ def scan_notes_vault(vault: str | Path) -> NoteScanReport:
 
 
 def scan_playbooks(path: str | Path) -> PlaybookScanReport:
-    root = Path(path).expanduser().resolve()
+    root = _resolve_playbook_path(path).resolve()
     if not root.exists():
         raise ValueError(f"Playbook path not found: {root}")
 
@@ -169,7 +171,7 @@ def scan_playbooks(path: str | Path) -> PlaybookScanReport:
 
 
 def load_playbooks(path: str | Path = "playbooks") -> list[dict[str, Any]]:
-    root = Path(path).expanduser()
+    root = _resolve_playbook_path(path)
     if not root.exists():
         return []
 
@@ -178,6 +180,24 @@ def load_playbooks(path: str | Path = "playbooks") -> list[dict[str, Any]]:
         first = report.errors[0]
         raise ValueError(f"Invalid playbook {first.path}: {first.error}")
     return [playbook.data for playbook in report.playbooks if isinstance(playbook.data, dict)]
+
+
+def _resolve_playbook_path(path: str | Path) -> Path:
+    root = Path(path).expanduser()
+    if root.exists() or root != DEFAULT_PLAYBOOKS_PATH:
+        return root
+
+    try:
+        files = distribution("penpal").files or []
+    except PackageNotFoundError:
+        return root
+
+    suffix = ("share", "penpal", "playbooks")
+    for entry in files:
+        parts = entry.parts
+        if len(parts) >= 4 and tuple(parts[-4:-1]) == suffix and parts[-1].endswith(".json"):
+            return Path(entry.locate()).parent
+    return root
 
 
 def find_playbook(playbooks: list[dict[str, Any]], playbook_id: str) -> dict[str, Any]:
