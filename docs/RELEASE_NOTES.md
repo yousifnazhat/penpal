@@ -1,5 +1,44 @@
 # Release Notes
 
+## v0.2.0-rc.1 Integrated PI Early Access
+
+PenPal `0.2.0rc1` is the first release candidate that verifies the deterministic Python core, bundled PI conversational harness, and installable Python artifacts as one cross-platform product path.
+
+### Install And Verify
+
+From the release archive on macOS or Linux:
+
+```bash
+python3 -m pip install .
+./scripts/setup-pi.sh
+pi
+```
+
+On Windows, run `./scripts/setup-pi.ps1`. If PI is absent, the setup scripts install the exact tested release from `.pi-version`; if another version exists, they preserve it and run a compatibility smoke unless replacement is explicitly requested. `/penpal-status` verifies all seven read-only tools and the four bundled playbooks without requiring a provider or model.
+
+### Product Hardening
+
+- Enforced engagement include/exclude scope across CLI and API target creation.
+- Added environment-backed secret parameters so values can be resolved at runtime without being persisted.
+- Versioned workspace JSON schemas, atomic replacement, and concurrency-safe evidence updates.
+- Hardened local API request types, body limits, errors, cache controls, and non-loopback binding safeguards.
+- Preserved masking, visible commands, and operator approval boundaries.
+
+### PI Integration
+
+- Pinned and tested `@earendil-works/pi-coding-agent` `0.80.6` with Node.js `22.19.0` or newer.
+- Added Bash and PowerShell setup paths that install PI when missing.
+- Added an offline RPC smoke that proves project package discovery, command registration, and `/penpal-status` behavior.
+- Added Linux and Windows PI CI coverage while keeping the Python core authoritative.
+
+### Distribution
+
+- Python wheel and source distribution artifacts now include the four validated playbooks.
+- CI installs the built wheel in a clean environment outside the checkout and validates the default playbook path.
+- Release artifacts are attached to this GitHub prerelease. PyPI and npm registry publication remain intentionally deferred until package ownership and publishing credentials are verified.
+
+Stored `v0.1.x` workspaces remain compatible and are upgraded to current storage schemas on write.
+
 ## v0.1.1-rc.1 Hardened Early Access
 
 PenPal `0.1.1rc1` is the recommended early-adopter checkpoint for the downloaded-repository workflow. It preserves the deterministic Python core and project-local PI cockpit while hardening user data, persistence, packaging, and contributor verification.
