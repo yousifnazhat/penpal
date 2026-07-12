@@ -1,0 +1,42 @@
+<evaluation>
+  <qa_pair>
+    <question>For the fixed demo workspace, what is the target name? Answer with the name only.</question>
+    <answer>demo</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>For the fixed demo workspace, what is the target host? Answer with the address only.</question>
+    <answer>10.10.10.5</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What exact schema identifies the target snapshot returned for the fixed demo workspace?</question>
+    <answer>penpal-context-v1</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which available service module covers the UDP management service present in the fixed demo workspace? Answer with the module name only.</question>
+    <answer>snmp</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What is the identifier of the deterministic next step that joins the management, mail, and remote-access signals in the fixed demo workspace?</question>
+    <answer>path_snmp_mail_remote</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What value level does that three-service enumeration path have? Answer with the value only.</question>
+    <answer>high</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>How many bundled playbooks validate successfully in this fixed PenPal release? Answer with the number only.</question>
+    <answer>4</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Which bundled playbook is connected to the fixed demo's three-service path? Answer with its id only.</question>
+    <answer>snmp-mail-remote</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>Does the SNMP module plan match a service in the fixed demo workspace? Answer true or false.</question>
+    <answer>true</answer>
+  </qa_pair>
+  <qa_pair>
+    <question>What literal masked value is returned instead of the fixed demo's credential-like evidence? Answer with the value only.</question>
+    <answer>&lt;sensitive&gt;</answer>
+  </qa_pair>
+</evaluation>

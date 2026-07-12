@@ -234,7 +234,7 @@ def build_parser() -> argparse.ArgumentParser:
     sources_reviewed_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     sources_reviewed_cmd.set_defaults(func=cmd_sources_reviewed)
 
-    serve_cmd = subcommands.add_parser("serve", help="Start the JSON API for a future frontend.")
+    serve_cmd = subcommands.add_parser("serve", help="Start the JSON API for local integrations.")
     serve_cmd.add_argument("--host", default="127.0.0.1")
     serve_cmd.add_argument("--port", type=int, default=8765)
     serve_cmd.add_argument(
@@ -243,6 +243,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Allow an unauthenticated non-loopback bind on a trusted, isolated network.",
     )
     serve_cmd.set_defaults(func=cmd_serve)
+
+    mcp_cmd = subcommands.add_parser("mcp", help="Run the read-only local MCP server over stdio.")
+    mcp_cmd.set_defaults(func=cmd_mcp)
 
     return parser
 
@@ -720,6 +723,17 @@ def cmd_sources_reviewed(args: argparse.Namespace, workspace: Workspace) -> int:
 def cmd_serve(args: argparse.Namespace, workspace: Workspace) -> int:
     workspace.ensure()
     serve(workspace, host=args.host, port=args.port, allow_remote=args.allow_remote)
+    return 0
+
+
+def cmd_mcp(args: argparse.Namespace, workspace: Workspace) -> int:
+    try:
+        from .mcp_server import run_mcp
+    except ModuleNotFoundError as exc:
+        if exc.name in {"mcp", "pydantic"}:
+            raise ValueError('MCP support is not installed; run: python -m pip install "penpal[mcp]"') from exc
+        raise
+    run_mcp(workspace)
     return 0
 
 

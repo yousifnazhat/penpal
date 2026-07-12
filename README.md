@@ -32,6 +32,17 @@ Use PenPal to summarize target demo and recommend next checks.
 
 Run `/penpal-status` for a provider-free check that PI, PenPal, and the bundled playbooks are connected.
 
+### Connect an MCP client
+
+Use this path when your existing agent supports MCP rather than PI. Install the optional local server, then configure the client to start the shown command over stdio:
+
+```bash
+python3 -m pip install ".[mcp]"
+penpal --workspace penpal-workspace mcp
+```
+
+The MCP server has the same seven read-only workflows as the PI cockpit. It masks sensitive values and does not execute commands or modify your workspace.
+
 ### Use the Python core only
 
 The core works without PI. From a checkout, install it and create a target:
@@ -44,7 +55,7 @@ penpal parse-nmap demo examples/pi/demo-nmap.xml
 penpal suggest demo
 ```
 
-The release wheel and source archive also include the Python core and bundled playbooks. PI support requires the downloaded repository because it contains the project-local extension.
+The release wheel and source archive also include the Python core and bundled playbooks. Until the optional PI adapter is published to npm, PI support requires the downloaded repository.
 
 ### Diagnose setup
 
@@ -76,6 +87,7 @@ penpal services <name>
 penpal evidence <name>
 penpal suggest <name>
 penpal context <name> --json
+penpal mcp
 penpal playbooks playbooks
 penpal modules list
 penpal modules plan <name> <module>

@@ -25,6 +25,7 @@ Changelog = "https://github.com/yousifnazhat/penpal/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = ["build==1.3.0", "ruff==0.15.20"]
+mcp = ["mcp>=1.28,<2"]
 
 [project.scripts]
 penpal = "penpal.cli:main"
