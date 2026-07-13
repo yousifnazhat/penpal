@@ -347,7 +347,7 @@ class ApiTests(unittest.TestCase):
                 base_url = f"http://127.0.0.1:{server.server_port}/api/targets/masked/ingest"
                 _, _, masked = _post_json(
                     base_url,
-                    {"text": "password=Winter2024!\n", "source": "masked-response"},
+                    {"text": "80/tcp open http\npassword=Winter2024!\n", "source": "masked-response"},
                 )
                 _, _, revealed = _post_json(
                     base_url,
@@ -356,8 +356,11 @@ class ApiTests(unittest.TestCase):
             finally:
                 _stop_server(server, thread)
 
-        self.assertEqual(masked["added"][0]["value"], "<sensitive>")
-        self.assertEqual(revealed["added"][0]["value"], "Winter2024!")
+        masked_credential = next(item for item in masked["added"] if item["type"] == "credential_candidate")
+        revealed_credential = next(item for item in revealed["added"] if item["type"] == "credential_candidate")
+        self.assertEqual(masked_credential["value"], "<sensitive>")
+        self.assertEqual(masked["detected_services"][0]["name"], "http")
+        self.assertEqual(revealed_credential["value"], "Winter2024!")
 
 
 def _get_json(url: str) -> dict[str, object]:

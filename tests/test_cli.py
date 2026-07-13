@@ -22,6 +22,28 @@ email: daniel@example.local
 
 
 class CliTests(unittest.TestCase):
+    def test_pasted_nmap_output_records_services_and_returns_masked_suggestions(self) -> None:
+        pasted = """PORT    STATE SERVICE
+80/tcp  open  http
+445/tcp open  microsoft-ds
+User: daniel
+password=Winter2024!
+/admin Status: 200, Size: 1234
+"""
+        with TemporaryDirectory() as temp_dir:
+            Workspace(temp_dir).create_target("10.10.10.5", name="pasted")
+            with patch("penpal.cli.sys.stdin", StringIO(pasted)):
+                result = run_json(["--workspace", temp_dir, "ingest", "pasted", "--source", "nmap", "--json"])
+
+        self.assertEqual(
+            [(item["protocol"], item["port"], item["name"]) for item in result["detected_services"]],
+            [("tcp", 80, "http"), ("tcp", 445, "microsoft-ds")],
+        )
+        self.assertIn("credentials_to_remote", [item["id"] for item in result["suggestions"]])
+        self.assertIn("review_web_paths", [item["id"] for item in result["suggestions"]])
+        self.assertIn("<sensitive>", json.dumps(result))
+        self.assertNotIn("Winter2024!", json.dumps(result))
+
     def test_doctor_reports_supported_environment_without_modifying_workspace(self) -> None:
         with (
             TemporaryDirectory() as temp_dir,

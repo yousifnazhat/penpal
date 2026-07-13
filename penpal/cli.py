@@ -11,7 +11,7 @@ from .advisor import build_suggestions
 from .api import serve
 from .context import build_context
 from .doctor import build_doctor_report, format_doctor_report
-from .ingest import extract_evidence
+from .ingest import extract_evidence, extract_services
 from .nmap_parser import NmapParseError, parse_nmap_xml
 from .playbooks import find_playbook, format_playbook, load_playbooks, scan_notes_vault, scan_playbooks
 from .runner import RunnerError, run_plan
@@ -399,6 +399,9 @@ def cmd_evidence(args: argparse.Namespace, workspace: Workspace) -> int:
 def cmd_ingest(args: argparse.Namespace, workspace: Workspace) -> int:
     target = workspace.require_target(args.name)
     text = _read_ingest_text(args.file)
+    detected_services = extract_services(text)
+    if detected_services:
+        workspace.merge_services(args.name, detected_services)
     existing_ids = {item.id for item in workspace.load_evidence(args.name)}
     result = extract_evidence(
         text,
@@ -422,6 +425,7 @@ def cmd_ingest(args: argparse.Namespace, workspace: Workspace) -> int:
             json.dumps(
                 {
                     "added": [item.to_dict(reveal=args.reveal_secrets) for item in result.evidence],
+                    "detected_services": [service.to_dict() for service in detected_services],
                     "ignored_duplicates": result.ignored_duplicates,
                     "suggestions": [suggestion.to_dict() for suggestion in suggestions],
                 },
@@ -431,6 +435,8 @@ def cmd_ingest(args: argparse.Namespace, workspace: Workspace) -> int:
         return 0
 
     print(f"added {len(result.evidence)} evidence items")
+    if detected_services:
+        print(f"recorded {len(detected_services)} services from pasted output")
     if result.ignored_duplicates:
         print(f"ignored {result.ignored_duplicates} duplicates")
     if result.evidence:

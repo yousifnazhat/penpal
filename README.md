@@ -4,33 +4,38 @@ PenPal is a local-first assistant for authorized enumeration. It turns services 
 
 PenPal does not execute exploits, hide commands, use credentials automatically, or provide C2 tasking.
 
-## Choose Your Path
+## Start With PI
 
-### Run the demo with PI
-
-Use this path when you want the conversational cockpit. Download a release archive or clone the repository. You need Python 3.11 or newer, Node.js 22.19 or newer, and npm.
+Download a release archive or clone the repository. You need Python 3.11 through 3.13, Node.js 22.19 or newer, and npm.
 
 ```bash
 git clone https://github.com/yousifnazhat/penpal.git
 cd penpal
-python3 -m penpal doctor
-python3 -m penpal --workspace penpal-workspace scope set --include 10.10.10.5
-python3 -m penpal --workspace penpal-workspace init 10.10.10.5 --name demo
-python3 -m penpal --workspace penpal-workspace parse-nmap demo examples/pi/demo-nmap.xml
-python3 -m penpal --workspace penpal-workspace suggest demo
 ./scripts/setup-pi.sh
 pi
 ```
 
-On Windows PowerShell, run `./scripts/setup-pi.ps1` instead. The setup scripts install the pinned PI version when it is missing, then verify the project package without using a model or provider credentials.
+On Windows PowerShell, run `./scripts/setup-pi.ps1` instead. The setup script installs the tested PI version when it is missing.
 
-Inside PI, approve project-local files if prompted, run `/login` when a provider is not configured, then try:
+Inside PI, approve project-local files if prompted and run `/login` when a provider is not configured. Create a target by stating that it is authorized:
 
 ```text
-Use PenPal to summarize target demo and recommend next checks.
+Create authorized target 10.10.11.42 named new-box.
 ```
 
-Run `/penpal-status` for a provider-free check that PI, PenPal, and the bundled playbooks are connected.
+Run Nmap or another enumeration tool, then paste its output into the same conversation:
+
+```text
+This is Nmap evidence for new-box:
+
+PORT    STATE SERVICE
+22/tcp  open  ssh
+80/tcp  open  http
+```
+
+PenPal stores the pasted text through its deterministic core, recognizes Nmap service lines, masks sensitive evidence, and returns evidence-backed suggestions. Paste each new result the same way. Run `/penpal-status` for a provider-free connection check.
+
+## Other Paths
 
 ### Connect an MCP client
 
@@ -41,7 +46,7 @@ python3 -m pip install "penpal-enum[mcp]"
 penpal --workspace penpal-workspace mcp
 ```
 
-The MCP server has the same seven read-only workflows as the PI cockpit. It masks sensitive values and does not execute commands or modify your workspace.
+The MCP server exposes seven read-only workflows. It masks sensitive values and does not execute commands or modify your workspace.
 
 ### Use the Python core only
 
@@ -58,7 +63,7 @@ penpal suggest demo
 The release wheel and source archive also include the Python core and bundled playbooks. Add the PI cockpit to a registry installation with:
 
 ```bash
-pi install npm:@yousif_nazhat/penpal-pi@1.0.0-rc.3
+pi install npm:@yousif_nazhat/penpal-pi@next
 ```
 
 ### Diagnose setup
@@ -101,7 +106,7 @@ penpal modules plan <name> <module>
 
 ## Safety
 
-Configure engagement scope before a real assessment. Keep the local API on its default loopback address. Review every suggested command and remain responsible for authorization. Playbooks require authorized use and operator approval.
+Configure engagement scope before a real assessment. Text pasted into PI is sent to the configured model provider; use an approved or local provider for sensitive engagement data. Keep the local API on its default loopback address. Review every suggested command and remain responsible for authorization. Playbooks require authorized use and operator approval.
 
 ## Help And Contributing
 

@@ -5,7 +5,7 @@ import re
 from dataclasses import dataclass
 from urllib.parse import urlsplit
 
-from .models import Evidence
+from .models import Evidence, Service
 
 
 EMAIL_RE = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
@@ -66,6 +66,25 @@ HOSTNAME_FILE_EXTENSIONS = (
 class IngestResult:
     evidence: list[Evidence]
     ignored_duplicates: int = 0
+
+
+def extract_services(text: str) -> list[Service]:
+    services: dict[str, Service] = {}
+    for raw_line in text.splitlines():
+        match = NMAP_PORT_RE.match(raw_line.strip())
+        if not match:
+            continue
+        port = int(match.group("port"))
+        if port > 65535:
+            continue
+        service = Service(
+            port=port,
+            protocol=match.group("proto").lower(),
+            state=match.group("state").lower(),
+            name=match.group("service").lower(),
+        )
+        services[service.key] = service
+    return sorted(services.values(), key=lambda item: (item.protocol, item.port))
 
 
 def extract_evidence(

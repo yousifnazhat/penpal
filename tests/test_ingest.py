@@ -2,7 +2,7 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from penpal.advisor import build_suggestions
-from penpal.ingest import extract_evidence
+from penpal.ingest import extract_evidence, extract_services
 from penpal.models import Service
 from penpal.workspace import Workspace
 
@@ -16,8 +16,28 @@ password=Winter2024!
 /backup.zip            Status: 200, Size: 9001
 """
 
+NMAP_OUTPUT = """
+PORT     STATE         SERVICE
+22/tcp   open          ssh
+80/tcp   open          http
+161/udp  open|filtered snmp
+99999/tcp open         invalid
+"""
+
 
 class IngestTests(unittest.TestCase):
+    def test_extract_services_from_pasted_nmap_output(self) -> None:
+        services = extract_services(NMAP_OUTPUT)
+
+        self.assertEqual(
+            [(service.protocol, service.port, service.state, service.name) for service in services],
+            [
+                ("tcp", 22, "open", "ssh"),
+                ("tcp", 80, "open", "http"),
+                ("udp", 161, "open|filtered", "snmp"),
+            ],
+        )
+
     def test_extract_evidence_from_raw_output(self) -> None:
         result = extract_evidence(RAW_OUTPUT, source="snmpwalk", service_key="udp/161")
         values = {(item.type, item.value) for item in result.evidence}

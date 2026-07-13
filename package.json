@@ -1,6 +1,6 @@
 {
   "name": "penpal-pi",
-  "version": "1.0.0-rc.3",
+  "version": "1.0.0-rc.4",
   "private": true,
   "description": "PenPal PI cockpit package.",
   "license": "MIT",
@@ -13,6 +13,6 @@
     "typebox": "*"
   },
   "pi": {
-    "extensions": ["./.pi/penpal-extension.ts"]
+    "extensions": ["./packages/penpal-pi/index.ts"]
   }
 }
