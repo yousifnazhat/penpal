@@ -7,6 +7,30 @@ PI_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/.pi-version")"
 PI_PACKAGE="${PI_PACKAGE:-@earendil-works/pi-coding-agent@${PI_VERSION}}"
 ALLOW_VERSION_MISMATCH=0
 
+python_is_supported() {
+  "$1" -c 'import sys; raise SystemExit(0 if (3, 11) <= sys.version_info[:2] < (3, 14) else 1)' >/dev/null 2>&1
+}
+
+if [ -n "${PENPAL_PYTHON:-}" ]; then
+  if ! command -v "$PENPAL_PYTHON" >/dev/null 2>&1 || ! python_is_supported "$PENPAL_PYTHON"; then
+    echo "error: PENPAL_PYTHON must name Python 3.11, 3.12, or 3.13" >&2
+    exit 1
+  fi
+else
+  for candidate in python3.13 python3.12 python3.11 python3 python; do
+    if command -v "$candidate" >/dev/null 2>&1 && python_is_supported "$candidate"; then
+      PENPAL_PYTHON="$candidate"
+      break
+    fi
+  done
+  if [ -z "${PENPAL_PYTHON:-}" ]; then
+    echo "error: Python 3.11, 3.12, or 3.13 is required" >&2
+    exit 1
+  fi
+fi
+export PENPAL_PYTHON
+echo "PenPal Python: $PENPAL_PYTHON ($("$PENPAL_PYTHON" --version 2>&1))"
+
 if ! command -v node >/dev/null 2>&1; then
   echo "error: Node.js is required for PI. Install Node.js, then rerun ./scripts/setup-pi.sh" >&2
   exit 1

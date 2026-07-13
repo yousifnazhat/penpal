@@ -1,6 +1,7 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from penpal.nmap_parser import NmapParseError, parse_nmap_xml, parse_nmap_xml_text
 
@@ -46,11 +47,26 @@ class NmapParserTests(unittest.TestCase):
         with TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / "scan.xml"
             path.write_text(malicious, encoding="utf-8")
+            utf16_path = Path(temp_dir) / "scan-utf16.xml"
+            utf16_path.write_bytes(malicious.encode("utf-16"))
 
-            with self.assertRaisesRegex(NmapParseError, "Invalid Nmap XML"):
+            with self.assertRaisesRegex(NmapParseError, "declarations are not allowed"):
                 parse_nmap_xml(path)
-            with self.assertRaisesRegex(NmapParseError, "Invalid Nmap XML"):
+            with self.assertRaisesRegex(NmapParseError, "declarations are not allowed"):
+                parse_nmap_xml(utf16_path)
+            with self.assertRaisesRegex(NmapParseError, "declarations are not allowed"):
                 parse_nmap_xml_text(malicious)
+
+    def test_rejects_oversized_xml_before_parsing(self) -> None:
+        with patch("penpal.nmap_parser.MAX_NMAP_XML_BYTES", 4):
+            with self.assertRaisesRegex(NmapParseError, "exceeds 4 bytes"):
+                parse_nmap_xml_text("<nmaprun/>")
+
+            with TemporaryDirectory() as temp_dir:
+                path = Path(temp_dir) / "large.xml"
+                path.write_bytes(b"<nmaprun/>")
+                with self.assertRaisesRegex(NmapParseError, "exceeds 4 bytes"):
+                    parse_nmap_xml(path)
 
 
 if __name__ == "__main__":
