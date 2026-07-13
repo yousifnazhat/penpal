@@ -10,6 +10,7 @@ const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const cwd = process.env.PENPAL_CWD ?? packageRoot;
 const python = process.env.PENPAL_PYTHON ?? "python3";
 const workspace = process.env.PENPAL_WORKSPACE;
+const activeWorkspace = resolve(cwd, workspace ?? "penpal-workspace");
 const readOnlyTools = [
   "penpal_context",
   "penpal_suggest",
@@ -118,7 +119,7 @@ export default function (pi: ExtensionAPI) {
         return;
       }
       ctx.ui.notify(
-        `PenPal ready: ${readOnlyTools.length} read-only tools registered; ${report.valid_playbooks} playbooks valid.`,
+        `PenPal ready: ${readOnlyTools.length} read-only tools registered; ${report.valid_playbooks} playbooks valid; workspace: ${activeWorkspace}.`,
         "info",
       );
     },

@@ -1,5 +1,6 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { execFile } from "node:child_process";
+import { resolve } from "node:path";
 import { promisify } from "node:util";
 import { Type } from "typebox";
 
@@ -7,6 +8,7 @@ const execFileAsync = promisify(execFile);
 const cwd = process.env.PENPAL_CWD ?? process.cwd();
 const python = process.env.PENPAL_PYTHON ?? (process.platform === "win32" ? "python" : "python3");
 const workspace = process.env.PENPAL_WORKSPACE;
+const activeWorkspace = resolve(cwd, workspace ?? "penpal-workspace");
 const readOnlyTools = [
   "penpal_context",
   "penpal_suggest",
@@ -107,7 +109,7 @@ export default function (pi: ExtensionAPI) {
           return;
         }
         ctx.ui.notify(
-          `PenPal ready: ${readOnlyTools.length} read-only tools registered; ${report.valid_playbooks} playbooks valid.`,
+          `PenPal ready: ${readOnlyTools.length} read-only tools registered; ${report.valid_playbooks} playbooks valid; workspace: ${activeWorkspace}.`,
           "info",
         );
       } catch (error) {

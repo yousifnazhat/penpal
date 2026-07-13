@@ -4,6 +4,13 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 ## [Unreleased]
 
+## [0.2.0-rc.3] - 2026-07-12
+
+### Fixed
+
+- Show the effective PenPal workspace path in `/penpal-status` for checkout and npm PI adapters.
+- Keep documented registry installs on stable transitive dependencies without requiring pip's global prerelease flag.
+
 ## [0.2.0-rc.2] - 2026-07-12
 
 ### Added
@@ -45,7 +52,8 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 - Initial deterministic core, workspace, playbooks, CLI/API, and project-local PI cockpit.
 
-[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v0.2.0-rc.2...HEAD
+[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v0.2.0-rc.3...HEAD
+[0.2.0-rc.3]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.3
 [0.2.0-rc.2]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.2
 [0.2.0-rc.1]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.1
 [0.1.1-rc.1]: https://github.com/yousifnazhat/penpal/releases/tag/v0.1.1-rc.1

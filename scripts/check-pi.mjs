@@ -23,6 +23,7 @@ delete env.PENPAL_WORKSPACE;
 const adapterEnv = {
   ...env,
   PENPAL_CWD: process.env.CI ? adapterProject : root,
+  PENPAL_WORKSPACE: join(adapterProject, "custom-workspace"),
   PI_CODING_AGENT_DIR: mkdtempSync(join(tmpdir(), "penpal-pi-adapter-check-")),
   ...(process.env.CI ? {} : { PYTHONPATH: [root, process.env.PYTHONPATH].filter(Boolean).join(delimiter) }),
 };
@@ -51,7 +52,11 @@ async function checkProjectPackage(label, projectRoot, projectEnv, packageMarker
     throw new Error(`${label} was not discovered:\n${listed}`);
   }
   console.log(`PI ${label}: discovered`);
-  await checkRpc(projectRoot, projectEnv);
+  const expectedWorkspace = resolve(
+    projectEnv.PENPAL_CWD ?? projectRoot,
+    projectEnv.PENPAL_WORKSPACE ?? "penpal-workspace",
+  );
+  await checkRpc(projectRoot, projectEnv, expectedWorkspace);
   console.log(`PI ${label} RPC harness: passed`);
 }
 
@@ -65,7 +70,7 @@ function runPi(args, cwd, processEnv) {
   });
 }
 
-function checkRpc(cwd, processEnv) {
+function checkRpc(cwd, processEnv, expectedWorkspace) {
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(piBin, ["--mode", "rpc", "--no-session", "--approve", "--offline"], {
       cwd,
@@ -122,7 +127,10 @@ function checkRpc(cwd, processEnv) {
             fail(new Error(message.message));
             return;
           }
-          if (/^PenPal ready: 7 read-only tools registered; [1-9]\d* playbooks valid\.$/.test(message.message)) {
+          const status = /^PenPal ready: 7 read-only tools registered; [1-9]\d* playbooks valid; workspace: (.+)\.$/.exec(
+            message.message,
+          );
+          if (status?.[1] === expectedWorkspace) {
             statusReceived = true;
           }
         }
