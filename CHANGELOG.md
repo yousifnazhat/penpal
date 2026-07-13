@@ -4,6 +4,16 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 ## [Unreleased]
 
+## [1.0.0-rc.3] - 2026-07-12
+
+### Security
+
+- Keep Nmap XML parsing self-contained while rejecting oversized input, DTDs, and entity declarations before parsing.
+
+### Fixed
+
+- Select an installed Python 3.11, 3.12, or 3.13 interpreter in both PI setup scripts instead of assuming `python3` is supported.
+
 ## [1.0.0-rc.2] - 2026-07-12
 
 ### Security
@@ -66,7 +76,8 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 - Initial deterministic core, workspace, playbooks, CLI/API, and project-local PI cockpit.
 
-[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.0-rc.2...HEAD
+[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.0-rc.3...HEAD
+[1.0.0-rc.3]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.3
 [1.0.0-rc.2]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.2
 [1.0.0-rc.1]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.1
 [0.2.0-rc.3]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.3

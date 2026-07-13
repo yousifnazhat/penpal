@@ -8,6 +8,28 @@ $PiVersion = (Get-Content "$RootDir/.pi-version" -Raw).Trim()
 $PiPackage = if ($env:PI_PACKAGE) { $env:PI_PACKAGE } else { "@earendil-works/pi-coding-agent@$PiVersion" }
 $AllowVersionMismatch = $false
 
+function Test-PenPalPython($Command) {
+    & $Command -c 'import sys; raise SystemExit(0 if (3, 11) <= sys.version_info[:2] < (3, 14) else 1)' 2>$null
+    return $LASTEXITCODE -eq 0
+}
+
+if ($env:PENPAL_PYTHON) {
+    if (-not (Get-Command $env:PENPAL_PYTHON -ErrorAction SilentlyContinue) -or -not (Test-PenPalPython $env:PENPAL_PYTHON)) {
+        throw "PENPAL_PYTHON must name Python 3.11, 3.12, or 3.13."
+    }
+} else {
+    foreach ($Candidate in @("python3.13", "python3.12", "python3.11", "python3", "python")) {
+        if ((Get-Command $Candidate -ErrorAction SilentlyContinue) -and (Test-PenPalPython $Candidate)) {
+            $env:PENPAL_PYTHON = $Candidate
+            break
+        }
+    }
+    if (-not $env:PENPAL_PYTHON) {
+        throw "Python 3.11, 3.12, or 3.13 is required."
+    }
+}
+Write-Host "PenPal Python: $env:PENPAL_PYTHON ($(& $env:PENPAL_PYTHON --version))"
+
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
     throw "Node.js is required for PI. Install Node.js, then rerun scripts/setup-pi.ps1."
 }
