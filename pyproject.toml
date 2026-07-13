@@ -1,6 +1,6 @@
 [project]
 name = "penpal-enum"
-version = "1.0.0rc3"
+version = "1.0.0rc4"
 description = "Backend-first enumeration assistant for authorized pentesters."
 readme = "README.md"
 requires-python = ">=3.11"

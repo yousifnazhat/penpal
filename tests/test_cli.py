@@ -22,6 +22,46 @@ email: daniel@example.local
 
 
 class CliTests(unittest.TestCase):
+    def test_pasted_nmap_output_records_services_and_returns_masked_suggestions(self) -> None:
+        pasted = """PORT    STATE SERVICE
+80/tcp  open  http
+445/tcp open  microsoft-ds
+User: daniel
+password=Winter2024!
+/admin Status: 200, Size: 1234
+"""
+        with TemporaryDirectory() as temp_dir:
+            Workspace(temp_dir).create_target("10.10.10.5", name="pasted")
+            with patch("penpal.cli.sys.stdin", StringIO(pasted)):
+                result = run_json(["--workspace", temp_dir, "ingest", "pasted", "--source", "nmap", "--json"])
+
+        self.assertEqual(
+            [(item["protocol"], item["port"], item["name"]) for item in result["detected_services"]],
+            [("tcp", 80, "http"), ("tcp", 445, "microsoft-ds")],
+        )
+        self.assertIn("credentials_to_remote", [item["id"] for item in result["suggestions"]])
+        self.assertIn("review_web_paths", [item["id"] for item in result["suggestions"]])
+        self.assertIn("<sensitive>", json.dumps(result))
+        self.assertNotIn("Winter2024!", json.dumps(result))
+
+    def test_focus_command_exhausts_and_reopens_a_suggestion(self) -> None:
+        suggestion_id = "playbook_smb-shares-configs-credentials"
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            target = workspace.create_target("10.10.10.5", name="focus")
+            workspace.merge_services(target.name, [Service(port=445, protocol="tcp", name="microsoft-ds")])
+
+            exhausted = run_json(["--workspace", temp_dir, "focus", target.name, suggestion_id, "exhausted", "--json"])
+            reopened = run_json(["--workspace", temp_dir, "focus", target.name, suggestion_id, "reopened", "--json"])
+            outcome = next(
+                item for item in workspace.load_evidence(target.name) if item.type == "investigation_outcome"
+            )
+
+        self.assertEqual(exhausted["outcome"]["metadata"]["status"], "exhausted")
+        self.assertNotIn(suggestion_id, [item["id"] for item in exhausted["suggestions"]])
+        self.assertEqual(outcome.metadata["status"], "reopened")
+        self.assertIn(suggestion_id, [item["id"] for item in reopened["suggestions"]])
+
     def test_doctor_reports_supported_environment_without_modifying_workspace(self) -> None:
         with (
             TemporaryDirectory() as temp_dir,

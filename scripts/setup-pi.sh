@@ -78,10 +78,7 @@ cat <<'EOF'
 Next:
   pi
   /login
-
-Then from this repository:
-  pi
   /penpal-status
 
-Approve project-local files if PI asks, then run /login if a provider is not configured.
+Then tell PI to create an authorized target and paste enumeration output into the conversation.
 EOF

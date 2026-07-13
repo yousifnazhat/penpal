@@ -4,6 +4,19 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 ## [Unreleased]
 
+## [1.0.0-rc.4] - 2026-07-13
+
+### Added
+
+- Let operators create authorized targets and paste exact enumeration output directly into PI.
+- Detect services from pasted terminal-style Nmap output before building suggestions.
+- Let operators mark investigation paths exhausted or reopened without adding a separate state store.
+
+### Changed
+
+- Make the conversational paste-and-suggest workflow the primary beginner experience.
+- Suppress exhausted suggestions until their supporting inputs change or the operator reopens them.
+
 ## [1.0.0-rc.3] - 2026-07-12
 
 ### Security
@@ -76,7 +89,8 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 - Initial deterministic core, workspace, playbooks, CLI/API, and project-local PI cockpit.
 
-[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.0-rc.3...HEAD
+[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.0-rc.4...HEAD
+[1.0.0-rc.4]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.4
 [1.0.0-rc.3]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.3
 [1.0.0-rc.2]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.2
 [1.0.0-rc.1]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.1

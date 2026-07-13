@@ -127,9 +127,10 @@ function checkRpc(cwd, processEnv, expectedWorkspace) {
             fail(new Error(message.message));
             return;
           }
-          const status = /^PenPal ready: 7 read-only tools registered; [1-9]\d* playbooks valid; workspace: (.+)\.$/.exec(
-            message.message,
-          );
+          const status =
+            /^PenPal ready: 11 tools registered \(8 read-only, 3 operator-controlled writes\); [1-9]\d* playbooks valid; workspace: (.+)\.$/.exec(
+              message.message,
+            );
           if (status?.[1] === expectedWorkspace) {
             statusReceived = true;
           }

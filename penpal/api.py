@@ -10,7 +10,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from .advisor import build_suggestions
 from .context import build_context
-from .ingest import extract_evidence
+from .ingest import extract_evidence, extract_services
 from .models import ParameterResolutionError, normalize_environment_variable_name
 from .nmap_parser import NmapParseError, parse_nmap_xml_text
 from .scope import ScopeViolationError
@@ -148,6 +148,9 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                         raise ApiRequestError("body.path is not supported; send tool output in body.text")
                     text = _optional_text(body, "text", default="", allow_empty=True)
                     reveal_secrets = _optional_bool(body, "reveal_secrets")
+                    detected_services = extract_services(text)
+                    if detected_services:
+                        workspace.merge_services(path[2], detected_services)
                     existing_ids = {item.id for item in workspace.load_evidence(path[2])}
                     result = extract_evidence(
                         text,
@@ -167,6 +170,7 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     self._json(
                         {
                             "added": [item.to_dict(reveal=reveal_secrets) for item in result.evidence],
+                            "detected_services": [service.to_dict() for service in detected_services],
                             "ignored_duplicates": result.ignored_duplicates,
                             "suggestions": [suggestion.to_dict() for suggestion in suggestions],
                         }
