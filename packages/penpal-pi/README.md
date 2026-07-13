@@ -2,11 +2,11 @@
 
 This PI package lets an operator create an authorized target, paste enumeration evidence into PI, and receive PenPal's masked deterministic suggestions. It includes eight read-only tools and three operator-controlled write tools, including explicit focus updates; it never runs enumeration or uses credentials.
 
-Install the PenPal Python core first, then install this release candidate in PI:
+Install the PenPal Python core first, then install the PI adapter:
 
 ```bash
 python3 -m pip install penpal-enum
-pi install npm:@yousif_nazhat/penpal-pi@next
+pi install npm:@yousif_nazhat/penpal-pi
 ```
 
 Set `PENPAL_WORKSPACE` when the workspace is not `penpal-workspace`; set `PENPAL_PYTHON` when Python is not available as `python3`.
