@@ -1,6 +1,6 @@
 # PenPal PI adapter
 
-This PI package lets an operator create an authorized target, paste enumeration evidence into PI, and receive PenPal's masked deterministic suggestions. It includes eight read-only tools and two operator-controlled write tools; it never runs enumeration or uses credentials.
+This PI package lets an operator create an authorized target, paste enumeration evidence into PI, and receive PenPal's masked deterministic suggestions. It includes eight read-only tools and three operator-controlled write tools, including explicit focus updates; it never runs enumeration or uses credentials.
 
 Install the PenPal Python core first, then install this release candidate in PI:
 

@@ -10,6 +10,8 @@ from .models import Evidence, Parameter, Service
 MAIL_PORTS = {110, 143, 993, 995}
 REMOTE_ACCESS_PORTS = {22, 3389, 5985, 5986, 445}
 WEB_PORTS = {80, 443, 8080, 8000, 8008, 8443}
+INVESTIGATION_OUTCOME_TYPE = "investigation_outcome"
+INVESTIGATION_OUTCOME_STATUSES = {"exhausted", "reopened"}
 
 
 @dataclass
@@ -40,6 +42,24 @@ class Suggestion:
         }
 
 
+def build_investigation_outcome(suggestion: Suggestion, status: str) -> Evidence:
+    if status not in INVESTIGATION_OUTCOME_STATUSES:
+        raise ValueError(f"status must be one of {sorted(INVESTIGATION_OUTCOME_STATUSES)}")
+    return Evidence(
+        id=f"investigation-outcome:{suggestion.id}",
+        type=INVESTIGATION_OUTCOME_TYPE,
+        value=suggestion.id,
+        source="operator-focus",
+        confidence="high",
+        tags=[status],
+        metadata={
+            "suggestion_id": suggestion.id,
+            "status": status,
+            "focus_keys": _suggestion_focus_keys(suggestion),
+        },
+    )
+
+
 def build_suggestions(
     services: list[Service],
     evidence: list[Evidence],
@@ -48,6 +68,7 @@ def build_suggestions(
     parameters: dict[str, Parameter] | None = None,
     reveal_secrets: bool = False,
     playbooks: list[dict[str, Any]] | None = None,
+    include_exhausted: bool = False,
 ) -> list[Suggestion]:
     parameters = parameters or {}
     target_host = _parameter_value(parameters, "target_host", target_host, reveal_secrets)
@@ -92,6 +113,7 @@ def build_suggestions(
                     f"snmpwalk -v2c -c <community> {target_host} 1.3.6.1.2.1.25.6.3.1.2",
                     f"python -m penpal ingest {target_name} --file .\\snmpwalk.txt --source snmpwalk --service udp/161",
                 ],
+                metadata={"focus_keys": _focus_keys(services)},
             )
         )
 
@@ -116,6 +138,7 @@ def build_suggestions(
                     f"python -m penpal evidence {target_name}",
                     f"python -m penpal ingest {target_name} --file .\\mail-check.txt --source mail --service <tcp/port>",
                 ],
+                metadata={"focus_keys": _focus_keys(services, usernames)},
             )
         )
 
@@ -136,6 +159,7 @@ def build_suggestions(
                     "Use known valid credentials against RDP, WinRM, SMB, or SSH when allowed.",
                 ],
                 command_examples=_remote_access_command_examples(services, target_host),
+                metadata={"focus_keys": _focus_keys(services, credential_candidates)},
             )
         )
 
@@ -163,6 +187,7 @@ def build_suggestions(
                     f"feroxbuster -u http://{domain}/ -w <wordlist> -o .\\penpal-workspace\\targets\\{target_name}\\web\\ferox-{domain}.txt",
                     f"python -m penpal ingest {target_name} --file .\\vhosts.txt --source ffuf --service tcp/80",
                 ],
+                metadata={"focus_keys": _focus_keys(services, hostnames)},
             )
         )
 
@@ -185,6 +210,7 @@ def build_suggestions(
                 + [
                     f"python -m penpal ingest {target_name} --file .\\web-notes.txt --source manual-web --service <tcp/port>",
                 ],
+                metadata={"focus_keys": _focus_keys(services, web_paths)},
             )
         )
 
@@ -208,12 +234,16 @@ def build_suggestions(
                     "Get-ChildItem .\\loot -Recurse -File | Select-String -Pattern 'pass|user|cred|key|token|secret'",
                     f"python -m penpal ingest {target_name} --file .\\loot-review.txt --source loot-review",
                 ],
+                metadata={"focus_keys": _focus_keys(services, interesting_files)},
             )
         )
 
     suggestions.extend(_playbook_suggestions(playbooks or [], services, evidence, reveal_secrets))
     defaults = {"target_host": target_host, "target_name": target_name}
-    return _render_suggestion_parameters(dedupe_suggestions(suggestions), parameters, reveal_secrets, defaults)
+    suggestions = dedupe_suggestions(suggestions)
+    if not include_exhausted:
+        suggestions = _suppress_exhausted_suggestions(suggestions, evidence)
+    return _render_suggestion_parameters(suggestions, parameters, reveal_secrets, defaults)
 
 
 def _playbook_suggestions(
@@ -246,6 +276,7 @@ def _playbook_suggestions(
                     "playbook_schema": playbook["schema"],
                     "playbook_tags": list(playbook.get("tags", [])),
                     "matched_signals": matched_signals,
+                    "focus_keys": _focus_keys(services, evidence),
                 },
             )
         )
@@ -410,6 +441,43 @@ def _evidence_fact(item: Evidence, reveal_secrets: bool = False) -> str:
     if item.service_key:
         return f"{item.type}: {value} ({item.service_key})"
     return f"{item.type}: {value}"
+
+
+def _focus_keys(services: list[Service], evidence: list[Evidence] | None = None) -> list[str]:
+    keys = {
+        f"service:{item.key}:{item.state}:{item.name}:{item.product}:{item.version}"
+        for item in services
+        if item.state == "open"
+    }
+    keys.update(f"evidence:{item.id}" for item in evidence or [] if item.type != INVESTIGATION_OUTCOME_TYPE)
+    return sorted(keys)
+
+
+def _suggestion_focus_keys(suggestion: Suggestion) -> list[str]:
+    keys = suggestion.metadata.get("focus_keys")
+    if isinstance(keys, list) and all(isinstance(key, str) for key in keys):
+        return list(keys)
+    return list(suggestion.supporting_facts)
+
+
+def _suppress_exhausted_suggestions(
+    suggestions: list[Suggestion],
+    evidence: list[Evidence],
+) -> list[Suggestion]:
+    outcomes = {
+        item.value: item
+        for item in evidence
+        if item.type == INVESTIGATION_OUTCOME_TYPE and item.metadata.get("suggestion_id") == item.value
+    }
+    result: list[Suggestion] = []
+    for suggestion in suggestions:
+        outcome = outcomes.get(suggestion.id)
+        if outcome and outcome.metadata.get("status") == "exhausted":
+            snapshot = outcome.metadata.get("focus_keys")
+            if isinstance(snapshot, list) and snapshot == _suggestion_focus_keys(suggestion):
+                continue
+        result.append(suggestion)
+    return result
 
 
 def dedupe_suggestions(suggestions: list[Suggestion]) -> list[Suggestion]:

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
-from .advisor import build_suggestions
+from .advisor import INVESTIGATION_OUTCOME_STATUSES, build_investigation_outcome, build_suggestions
 from .api import serve
 from .context import build_context
 from .doctor import build_doctor_report, format_doctor_report
@@ -112,6 +112,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     suggest_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
     suggest_cmd.set_defaults(func=cmd_suggest)
+
+    focus_cmd = subcommands.add_parser("focus", help="Mark a suggestion exhausted or reopened.")
+    focus_cmd.add_argument("name", help="Target name.")
+    focus_cmd.add_argument("suggestion_id", help="Suggestion id returned by PenPal.")
+    focus_cmd.add_argument("status", choices=sorted(INVESTIGATION_OUTCOME_STATUSES))
+    focus_cmd.add_argument("--playbooks", default="playbooks", help="Community playbook file or directory.")
+    focus_cmd.add_argument("--json", action="store_true", help="Emit raw JSON.")
+    focus_cmd.set_defaults(func=cmd_focus)
 
     context_cmd = subcommands.add_parser("context", help="Emit PI-friendly target context JSON.")
     context_cmd.add_argument("name", help="Target name.")
@@ -495,6 +503,52 @@ def cmd_suggest(args: argparse.Namespace, workspace: Workspace) -> int:
             for command in suggestion.command_examples:
                 print(f"- {command}")
         print()
+    return 0
+
+
+def cmd_focus(args: argparse.Namespace, workspace: Workspace) -> int:
+    target = workspace.require_target(args.name)
+    evidence = workspace.load_evidence(args.name)
+    all_suggestions = build_suggestions(
+        workspace.load_services(args.name),
+        evidence,
+        target_host=target.host,
+        target_name=target.name,
+        parameters=workspace.load_parameters(target.name),
+        playbooks=load_playbooks(args.playbooks),
+        include_exhausted=True,
+    )
+    suggestion = next((item for item in all_suggestions if item.id == args.suggestion_id), None)
+    if suggestion is None:
+        raise ValueError(f"unknown suggestion for target {target.name}: {args.suggestion_id}")
+
+    outcome = build_investigation_outcome(suggestion, args.status)
+    saved = workspace.append_evidence(args.name, [outcome])
+    suggestions = build_suggestions(
+        workspace.load_services(args.name),
+        saved,
+        target_host=target.host,
+        target_name=target.name,
+        parameters=workspace.load_parameters(target.name),
+        playbooks=load_playbooks(args.playbooks),
+    )
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "outcome": outcome.to_dict(reveal=False),
+                    "suggestions": [item.to_dict() for item in suggestions],
+                },
+                indent=2,
+            )
+        )
+        return 0
+
+    print(f"marked {suggestion.id} {args.status}")
+    if args.status == "exhausted":
+        print("suppressed until its supporting inputs change or the operator reopens it")
+    if suggestions:
+        print(f"primary next step: {suggestions[0].title}")
     return 0
 
 

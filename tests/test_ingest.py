@@ -1,7 +1,7 @@
 from tempfile import TemporaryDirectory
 import unittest
 
-from penpal.advisor import build_suggestions
+from penpal.advisor import build_investigation_outcome, build_suggestions
 from penpal.ingest import extract_evidence, extract_services
 from penpal.models import Service
 from penpal.workspace import Workspace
@@ -97,6 +97,30 @@ class IngestTests(unittest.TestCase):
         )
         self.assertTrue(any("Winter2024!" in fact for fact in revealed_remote.supporting_facts))
         self.assertIn("xfreerdp /v:10.10.10.5 /u:daniel /p:Winter2024! /cert:ignore", revealed_remote.command_examples)
+
+    def test_exhausted_suggestion_reopens_when_supporting_evidence_changes(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            target = workspace.create_target("10.10.10.5", name="focus")
+            services = workspace.merge_services(target.name, [Service(port=80, protocol="tcp", name="http")])
+            evidence = workspace.append_evidence(
+                target.name,
+                extract_evidence("/admin Status: 200, Size: 1234", source="feroxbuster").evidence,
+            )
+            suggestion = next(item for item in build_suggestions(services, evidence) if item.id == "review_web_paths")
+            evidence = workspace.append_evidence(
+                target.name,
+                [build_investigation_outcome(suggestion, "exhausted")],
+            )
+
+            self.assertNotIn("review_web_paths", [item.id for item in build_suggestions(services, evidence)])
+
+            evidence = workspace.append_evidence(
+                target.name,
+                extract_evidence("/backup.zip Status: 200, Size: 9001", source="feroxbuster").evidence,
+            )
+
+        self.assertIn("review_web_paths", [item.id for item in build_suggestions(services, evidence)])
 
 
 if __name__ == "__main__":

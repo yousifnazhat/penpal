@@ -17,10 +17,12 @@ const readOnlyTools = [
   "penpal_modules_list",
   "penpal_module_plan",
 ];
-const writeTools = ["penpal_target_create", "penpal_ingest"];
+const writeTools = ["penpal_target_create", "penpal_ingest", "penpal_focus_update"];
 const allTools = [...readOnlyTools, ...writeTools];
 const PENPAL_GUIDANCE = `PenPal is the source of truth for enumeration evidence.
 When the operator pastes enumeration output or asks you to save or analyze it, call penpal_ingest with the exact pasted text unchanged, then explain only its masked evidence and suggestions.
+Present the first PenPal suggestion as the primary next step and no more than two alternatives. Use this stopping rule: after one complete pass of the listed actions without new supporting evidence, ask whether to mark that suggestion exhausted.
+Call penpal_focus_update only when the operator's current message explicitly asks to mark a suggestion exhausted or reopened. Never infer exhaustion from tool output alone.
 If no target is named, call penpal_targets; use the sole target or ask which target to use.
 Call penpal_target_create only after the operator explicitly confirms the target is authorized, and wait for it to succeed before ingesting evidence.
 Never invent evidence, authorization, source labels, service keys, or target details.`;
@@ -33,10 +35,17 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("tool_call", (event) => {
-    if (event.toolName !== "penpal_ingest") return;
-    const text = (event.input as { text?: unknown }).text;
-    if (typeof text !== "string" || !latestPrompt.includes(text)) {
-      return { block: true, reason: "PenPal can ingest only verbatim evidence from the operator's current message." };
+    if (event.toolName === "penpal_ingest") {
+      const text = (event.input as { text?: unknown }).text;
+      if (typeof text !== "string" || !latestPrompt.includes(text)) {
+        return { block: true, reason: "PenPal can ingest only verbatim evidence from the operator's current message." };
+      }
+    }
+    if (event.toolName === "penpal_focus_update") {
+      const statement = (event.input as { operator_statement?: unknown }).operator_statement;
+      if (typeof statement !== "string" || !latestPrompt.includes(statement)) {
+        return { block: true, reason: "PenPal focus changes require an exact statement from the operator's current message." };
+      }
     }
   });
 
@@ -84,6 +93,26 @@ export default function (pi: ExtensionAPI) {
       const args = ["ingest", params.target, "--source", params.source ?? "paste", "--json"];
       if (params.service) args.push("--service", params.service);
       return run(args, signal, params.text);
+    },
+  });
+
+  pi.registerTool({
+    name: "penpal_focus_update",
+    label: "Update PenPal focus",
+    description:
+      "Mark an existing suggestion exhausted or reopened only when the operator explicitly requests that change.",
+    parameters: Type.Object({
+      target: Type.String({ minLength: 1, description: "Existing PenPal target name" }),
+      suggestion: Type.String({ minLength: 1, description: "Suggestion id returned by PenPal" }),
+      status: Type.Union([Type.Literal("exhausted"), Type.Literal("reopened")]),
+      operator_statement: Type.String({
+        minLength: 1,
+        maxLength: 1_000,
+        description: "Exact operator text explicitly requesting this focus change",
+      }),
+    }),
+    async execute(_toolCallId, params, signal) {
+      return run(["focus", params.target, params.suggestion, params.status, "--json"], signal);
     },
   });
 

@@ -35,6 +35,14 @@ PORT    STATE SERVICE
 
 PenPal stores the pasted text through its deterministic core, recognizes Nmap service lines, masks sensitive evidence, and returns evidence-backed suggestions. Paste each new result the same way. Run `/penpal-status` for a provider-free connection check.
 
+PenPal presents one primary next step and up to two alternatives. After a complete pass produces no new supporting evidence, tell PI:
+
+```text
+Mark that suggestion exhausted.
+```
+
+PenPal suppresses the path until you explicitly reopen it or its supporting inputs change, preventing the same dead end from being recommended repeatedly.
+
 ## Other Paths
 
 ### Connect an MCP client
@@ -81,6 +89,7 @@ Doctor checks the Python version, playbooks, workspace schemas, scope, plaintext
 - Parses Nmap XML and ingests pasted or saved tool output.
 - Masks credential-like evidence and sensitive parameters by default.
 - Uses deterministic suggestions, service modules, and reviewed playbooks to explain the next authorized check.
+- Remembers exhausted investigation paths and reopens them when their supporting inputs change.
 - Uses environment references for secrets so values are not persisted in workspace JSON.
 - Provides a loopback-only JSON API for local integrations.
 
@@ -95,6 +104,7 @@ penpal ingest <name> --file <output.txt> --source <tool-name> --service <proto/p
 penpal services <name>
 penpal evidence <name>
 penpal suggest <name>
+penpal focus <name> <suggestion-id> exhausted|reopened
 penpal context <name> --json
 penpal mcp
 penpal playbooks playbooks

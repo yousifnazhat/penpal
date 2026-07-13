@@ -44,6 +44,24 @@ password=Winter2024!
         self.assertIn("<sensitive>", json.dumps(result))
         self.assertNotIn("Winter2024!", json.dumps(result))
 
+    def test_focus_command_exhausts_and_reopens_a_suggestion(self) -> None:
+        suggestion_id = "playbook_smb-shares-configs-credentials"
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            target = workspace.create_target("10.10.10.5", name="focus")
+            workspace.merge_services(target.name, [Service(port=445, protocol="tcp", name="microsoft-ds")])
+
+            exhausted = run_json(["--workspace", temp_dir, "focus", target.name, suggestion_id, "exhausted", "--json"])
+            reopened = run_json(["--workspace", temp_dir, "focus", target.name, suggestion_id, "reopened", "--json"])
+            outcome = next(
+                item for item in workspace.load_evidence(target.name) if item.type == "investigation_outcome"
+            )
+
+        self.assertEqual(exhausted["outcome"]["metadata"]["status"], "exhausted")
+        self.assertNotIn(suggestion_id, [item["id"] for item in exhausted["suggestions"]])
+        self.assertEqual(outcome.metadata["status"], "reopened")
+        self.assertIn(suggestion_id, [item["id"] for item in reopened["suggestions"]])
+
     def test_doctor_reports_supported_environment_without_modifying_workspace(self) -> None:
         with (
             TemporaryDirectory() as temp_dir,
