@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, Theme, ThemeColor } from "@earendil-works/pi-coding-agent";
 import { execFile } from "node:child_process";
 import { resolve } from "node:path";
 import { Type } from "typebox";
@@ -19,6 +19,33 @@ const readOnlyTools = [
 ];
 const writeTools = ["penpal_target_create", "penpal_ingest", "penpal_focus_update"];
 const allTools = [...readOnlyTools, ...writeTools];
+const fullLogo = [
+  "██████╗ ███████╗███╗   ██╗██████╗  █████╗ ██╗",
+  "██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔══██╗██║",
+  "██████╔╝█████╗  ██╔██╗ ██║██████╔╝███████║██║",
+  "██╔═══╝ ██╔══╝  ██║╚██╗██║██╔═══╝ ██╔══██║██║",
+  "██║     ███████╗██║ ╚████║██║     ██║  ██║███████╗",
+  "╚═╝     ╚══════╝╚═╝  ╚═══╝╚═╝     ╚═╝  ╚═╝╚══════╝",
+  "       ···╼  ░▒▓ evidence > context > next step ▓▒░  ╾···",
+];
+const compactLogo = [
+  " ____             ____       _",
+  "|  _ \\ ___ _ __ |  _ \\ __ _| |",
+  "| |_) / _ \\ '_ \\| |_) / _` | |",
+  "|  __/  __/ | | |  __/ (_| | |",
+  "|_|   \\___|_| |_|_|   \\__,_|_|",
+  "     evidence > context > next step",
+];
+const logoColors: ThemeColor[] = [
+  "accent",
+  "mdLink",
+  "syntaxFunction",
+  "syntaxType",
+  "thinkingHigh",
+  "syntaxNumber",
+  "warning",
+  "success",
+];
 const PENPAL_GUIDANCE = `PenPal is the source of truth for enumeration evidence.
 When the operator pastes enumeration output or asks you to save or analyze it, call penpal_ingest with the exact pasted text unchanged, then explain only its masked evidence and suggestions.
 Present the first PenPal suggestion as the primary next step and no more than two alternatives. Use this stopping rule: after one complete pass of the listed actions without new supporting evidence, ask whether to mark that suggestion exhausted.
@@ -29,6 +56,14 @@ Never invent evidence, authorization, source labels, service keys, or target det
 
 export default function (pi: ExtensionAPI) {
   let latestPrompt = "";
+  pi.on("session_start", (_event, ctx) => {
+    if (ctx.mode !== "tui") return;
+    ctx.ui.setHeader((_tui, theme) => ({
+      render: (width) => renderHeader(theme, width),
+      invalidate() {},
+    }));
+  });
+
   pi.on("before_agent_start", async (event) => {
     latestPrompt = event.prompt;
     return { systemPrompt: `${event.systemPrompt}\n\n${PENPAL_GUIDANCE}` };
@@ -213,6 +248,50 @@ export default function (pi: ExtensionAPI) {
       }
     },
   });
+}
+
+function renderHeader(theme: Theme, width: number): string[] {
+  const logo = width >= Math.max(...fullLogo.map((line) => line.length)) ? fullLogo : compactLogo;
+  const details: Array<[string, string]> = [
+    ["PenPal", "PI conversational cockpit"],
+    ["Core", "deterministic Python"],
+    ["Tools", `${allTools.length} registered`],
+    ["Workspace", activeWorkspace],
+    ["Safety", "masked + operator controlled"],
+  ];
+  const plainDetails = details.map(([label, value]) => `${label === "PenPal" ? `${label} //` : `${label}:`} ${value}`);
+  const paintedLogo = logo.map((line, row) => paintLogo(line, row, theme));
+  const paintedDetails = details.map(([label, value]) =>
+    label === "PenPal"
+      ? theme.bold(theme.fg("accent", `${label} // ${value}`))
+      : `${theme.fg("success", `${label}:`)} ${theme.fg("text", value)}`,
+  );
+  paintedDetails.push("", logoColors.map((color) => theme.fg(color, "███")).join(""));
+  plainDetails.push("", " ".repeat(logoColors.length * 3));
+
+  const leftWidth = Math.max(...logo.map((line) => line.length));
+  const lines = [""];
+  if (width >= leftWidth + 4 + Math.max(...plainDetails.map((line) => line.length))) {
+    const rows = Math.max(paintedLogo.length, paintedDetails.length);
+    for (let row = 0; row < rows; row += 1) {
+      const plainLeft = logo[row] ?? "";
+      lines.push(`${paintedLogo[row] ?? ""}${" ".repeat(leftWidth - plainLeft.length + 4)}${paintedDetails[row] ?? ""}`.trimEnd());
+    }
+  } else {
+    lines.push(...paintedLogo, "", ...paintedDetails);
+  }
+  lines.push("", theme.fg("muted", "Paste authorized enumeration to begin  ·  /penpal-status  ·  /help"), "");
+  return lines;
+}
+
+function paintLogo(line: string, row: number, theme: Theme): string {
+  const band = Math.max(1, Math.ceil(line.length / logoColors.length));
+  const pieces: string[] = [];
+  for (let start = 0; start < line.length; start += band) {
+    const color = logoColors[(Math.floor(start / band) + row) % logoColors.length];
+    pieces.push(theme.fg(color, line.slice(start, start + band)));
+  }
+  return pieces.join("");
 }
 
 async function run(args: string[], signal?: AbortSignal, input?: string) {

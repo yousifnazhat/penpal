@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
 import sys
 from pathlib import Path
 from typing import Any
@@ -47,13 +49,14 @@ def main(argv: list[str] | None = None) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="penpal", description="PenPal enumeration assistant.")
+    parser.set_defaults(func=cmd_welcome)
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
         "--workspace",
         default=DEFAULT_WORKSPACE,
         help=f"Workspace root. Default: {DEFAULT_WORKSPACE}",
     )
-    subcommands = parser.add_subparsers(dest="command", required=True)
+    subcommands = parser.add_subparsers(dest="command")
 
     doctor_cmd = subcommands.add_parser("doctor", help="Check the local PenPal and PI environment.")
     doctor_cmd.add_argument("--json", action="store_true", help="Emit machine-readable diagnostics.")
@@ -256,6 +259,104 @@ def build_parser() -> argparse.ArgumentParser:
     mcp_cmd.set_defaults(func=cmd_mcp)
 
     return parser
+
+
+def cmd_welcome(args: argparse.Namespace, workspace: Workspace) -> int:
+    width = shutil.get_terminal_size(fallback=(80, 24)).columns
+    color = sys.stdout.isatty() and "NO_COLOR" not in os.environ and os.environ.get("TERM") != "dumb"
+    textured_logo = [
+        "██████╗ ███████╗███╗   ██╗██████╗  █████╗ ██╗",
+        "██╔══██╗██╔════╝████╗  ██║██╔══██╗██╔══██╗██║",
+        "██████╔╝█████╗  ██╔██╗ ██║██████╔╝███████║██║",
+        "██╔═══╝ ██╔══╝  ██║╚██╗██║██╔═══╝ ██╔══██║██║",
+        "██║     ███████╗██║ ╚████║██║     ██║  ██║███████╗",
+        "╚═╝     ╚══════╝╚═╝  ╚═══╝╚═╝     ╚═╝  ╚═╝╚══════╝",
+        "       ···╼  ░▒▓ evidence > context > next step ▓▒░  ╾···",
+    ]
+    compact_logo = [
+        r" ____             ____       _",
+        r"|  _ \ ___ _ __ |  _ \ __ _| |",
+        r"| |_) / _ \ '_ \| |_) / _` | |",
+        r"|  __/  __/ | | |  __/ (_| | |",
+        r"|_|   \___|_| |_|_|   \__,_|_|",
+        "     evidence > context > next step",
+    ]
+    logo = textured_logo if _supports_unicode() and width >= max(map(len, textured_logo)) else compact_logo
+    targets = len(workspace.list_targets()) if workspace.targets_dir.exists() else 0
+    playbooks = scan_playbooks("playbooks")
+    details = [
+        ("PenPal", f"v{__version__}"),
+        ("Core", "deterministic Python"),
+        ("Harness", "PI conversational cockpit"),
+        ("Workspace", str(workspace.root)),
+        ("Targets", str(targets)),
+        ("Playbooks", f"{playbooks.valid_playbooks} valid"),
+        ("Scope", "enforced" if workspace.load_scope() else "not configured"),
+        ("Safety", "masked + operator controlled"),
+    ]
+    left_width = max(map(len, logo))
+    plain_details = [f"{label}/{value}" if label == "PenPal" else f"{label}: {value}" for label, value in details]
+    rendered_details = [
+        f"{_ansi(label + ':', '1;32', color)} {value}"
+        if label != "PenPal"
+        else _ansi(f"{label}/{value}", "1;35", color)
+        for label, value in details
+    ]
+    if color:
+        plain_details.extend(["", " " * 24])
+        rendered_details.extend(["", _color_rail()])
+    rendered_logo = [_gradient(line, color, offset=index) for index, line in enumerate(logo)]
+
+    if width >= left_width + 4 + max(map(len, plain_details)):
+        rows = max(len(rendered_logo), len(rendered_details))
+        for index in range(rows):
+            plain_left = logo[index] if index < len(logo) else ""
+            left = rendered_logo[index] if index < len(rendered_logo) else ""
+            right = rendered_details[index] if index < len(rendered_details) else ""
+            padding = " " * (left_width - len(plain_left) + 4)
+            print(f"{left}{padding}{right}".rstrip())
+    else:
+        print("\n".join(rendered_logo))
+        print()
+        print("\n".join(rendered_details))
+
+    print("\nPaste enumeration into PI, or run `penpal --help` for CLI commands.")
+    return 0
+
+
+def _ansi(text: str, code: str, enabled: bool) -> str:
+    return f"\033[{code}m{text}\033[0m" if enabled else text
+
+
+def _gradient(text: str, enabled: bool, *, offset: int = 0) -> str:
+    if not enabled:
+        return text
+    palette = (45, 51, 87, 93, 129, 165, 201, 207)
+    palette = palette[offset % len(palette) :] + palette[: offset % len(palette)]
+    band = max(1, (len(text) + len(palette) - 1) // len(palette))
+    pieces: list[str] = []
+    active = None
+    for index, char in enumerate(text):
+        shade = palette[min(index // band, len(palette) - 1)]
+        if shade != active:
+            pieces.append(f"\033[38;5;{shade}m")
+            active = shade
+        pieces.append(char)
+    pieces.append("\033[0m")
+    return "".join(pieces)
+
+
+def _color_rail() -> str:
+    return "".join(f"\033[48;5;{shade}m   " for shade in (45, 51, 87, 93, 129, 165, 201, 207)) + "\033[0m"
+
+
+def _supports_unicode() -> bool:
+    encoding = getattr(sys.stdout, "encoding", None) or "utf-8"
+    try:
+        "█╔░▒▓".encode(encoding)
+    except (LookupError, UnicodeEncodeError):
+        return False
+    return True
 
 
 def cmd_doctor(args: argparse.Namespace, workspace: Workspace) -> int:

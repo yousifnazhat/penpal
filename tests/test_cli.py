@@ -7,6 +7,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 
+from penpal import __version__
 from penpal.cli import main
 from penpal.ingest import extract_evidence
 from penpal.models import Service
@@ -22,6 +23,41 @@ email: daniel@example.local
 
 
 class CliTests(unittest.TestCase):
+    def test_bare_command_shows_read_only_welcome(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir) / "not-created"
+            stdout = StringIO()
+            with redirect_stdout(stdout):
+                code = main(["--workspace", str(workspace)])
+
+        output = stdout.getvalue()
+        self.assertEqual(code, 0)
+        self.assertIn(f"PenPal/v{__version__}", output)
+        self.assertIn("Harness: PI conversational cockpit", output)
+        self.assertIn("Safety: masked + operator controlled", output)
+        self.assertNotIn("\033[", output)
+        self.assertFalse(workspace.exists())
+
+    def test_bare_command_uses_textured_color_in_a_wide_tty(self) -> None:
+        class TtyBuffer(StringIO):
+            def isatty(self) -> bool:
+                return True
+
+        with TemporaryDirectory() as temp_dir:
+            stdout = TtyBuffer()
+            with (
+                patch.dict(os.environ, {"TERM": "xterm-256color"}, clear=True),
+                patch("penpal.cli.shutil.get_terminal_size", return_value=os.terminal_size((120, 24))),
+                redirect_stdout(stdout),
+            ):
+                code = main(["--workspace", str(Path(temp_dir) / "not-created")])
+
+        output = stdout.getvalue()
+        self.assertEqual(code, 0)
+        self.assertIn("██████", output)
+        self.assertIn("\033[38;5;", output)
+        self.assertIn("\033[48;5;", output)
+
     def test_pasted_nmap_output_records_services_and_returns_masked_suggestions(self) -> None:
         pasted = """PORT    STATE SERVICE
 80/tcp  open  http
