@@ -251,19 +251,42 @@ class WorkspaceTests(unittest.TestCase):
 
         self.assertEqual(stored, schemas)
 
-    def test_legacy_storage_without_schema_loads_and_upgrades_on_write(self) -> None:
+    def test_v010_workspace_loads_and_upgrades_on_write(self) -> None:
         with TemporaryDirectory() as temp_dir:
             workspace = Workspace(temp_dir)
             target = workspace.create_target("10.10.10.5", name="nibbles")
-            path = workspace.services_path(target.name)
-            write_json(path, {"services": []})
+            paths = {
+                "target": workspace.target_path(target.name) / "target.json",
+                "services": workspace.services_path(target.name),
+                "evidence": workspace.evidence_path(target.name),
+                "parameters": workspace.parameters_path(target.name),
+            }
+            for path in paths.values():
+                data = json.loads(path.read_text(encoding="utf-8"))
+                del data["schema"]
+                write_json(path, data)
 
+            loaded_target = workspace.require_target(target.name)
             services = workspace.load_services(target.name)
+            evidence = workspace.load_evidence(target.name)
+            parameters = workspace.load_parameters(target.name)
+            workspace.save_target(loaded_target)
             workspace.save_services(target.name, services)
-            upgraded = json.loads(path.read_text(encoding="utf-8"))
+            workspace.save_evidence(target.name, evidence)
+            workspace.save_parameters(target.name, parameters)
+            upgraded = {name: json.loads(path.read_text(encoding="utf-8"))["schema"] for name, path in paths.items()}
 
-        self.assertEqual(services, [])
-        self.assertEqual(upgraded["schema"], SERVICES_STORAGE_SCHEMA)
+        self.assertEqual(loaded_target.host, "10.10.10.5")
+        self.assertEqual(parameters["target_host"].value, "10.10.10.5")
+        self.assertEqual(
+            upgraded,
+            {
+                "target": TARGET_STORAGE_SCHEMA,
+                "services": SERVICES_STORAGE_SCHEMA,
+                "evidence": EVIDENCE_STORAGE_SCHEMA,
+                "parameters": PARAMETERS_STORAGE_SCHEMA,
+            },
+        )
 
     def test_unknown_storage_schema_is_rejected(self) -> None:
         with TemporaryDirectory() as temp_dir:

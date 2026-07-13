@@ -4,6 +4,13 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 ## [Unreleased]
 
+## [1.0.0-rc.1] - 2026-07-12
+
+### Changed
+
+- Opened the V1 release-candidate cycle with frozen CLI, JSON, workspace, MCP, and PI integration contracts.
+- Expanded the `0.1.x` workspace compatibility regression across target, service, evidence, and parameter storage.
+
 ## [0.2.0-rc.3] - 2026-07-12
 
 ### Fixed
@@ -52,7 +59,8 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 - Initial deterministic core, workspace, playbooks, CLI/API, and project-local PI cockpit.
 
-[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v0.2.0-rc.3...HEAD
+[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.0-rc.1...HEAD
+[1.0.0-rc.1]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.1
 [0.2.0-rc.3]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.3
 [0.2.0-rc.2]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.2
 [0.2.0-rc.1]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.1
