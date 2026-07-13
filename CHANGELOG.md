@@ -4,6 +4,16 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-07-13
+
+### Added
+
+- First stable release of PenPal's deterministic enumeration core and PI conversational cockpit.
+
+### Changed
+
+- Promote the RC4 campaign workflow after clean-install, persistence, compatibility, and safety validation.
+
 ## [1.0.0-rc.4] - 2026-07-13
 
 ### Added
@@ -89,7 +99,8 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 - Initial deterministic core, workspace, playbooks, CLI/API, and project-local PI cockpit.
 
-[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.0-rc.4...HEAD
+[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0
 [1.0.0-rc.4]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.4
 [1.0.0-rc.3]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.3
 [1.0.0-rc.2]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.2
