@@ -58,7 +58,7 @@ penpal suggest demo
 The release wheel and source archive also include the Python core and bundled playbooks. Add the PI cockpit to a registry installation with:
 
 ```bash
-pi install npm:@yousif_nazhat/penpal-pi@1.0.0-rc.1
+pi install npm:@yousif_nazhat/penpal-pi@1.0.0-rc.2
 ```
 
 ### Diagnose setup

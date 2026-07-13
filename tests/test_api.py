@@ -14,6 +14,9 @@ from penpal.models import Evidence, Service
 from penpal.workspace import Workspace
 
 
+API_NMAP_XML = """<nmaprun><host><ports><port protocol="tcp" portid="80"><state state="open"/><service name="http"/></port></ports></host></nmaprun>"""
+
+
 class ApiTests(unittest.TestCase):
     def test_environment_parameter_api_never_persists_the_resolved_secret(self) -> None:
         secret = "Winter2024!"
@@ -25,7 +28,6 @@ class ApiTests(unittest.TestCase):
                 status, _, masked = _post_json(
                     f"http://127.0.0.1:{server.server_port}/api/targets/chain/parameters",
                     {"key": "known_password", "env_var": "PENPAL_API_SECRET"},
-                    origin="https://example.invalid",
                 )
                 revealed = _get_json(
                     f"http://127.0.0.1:{server.server_port}/api/targets/chain/parameters?reveal_secrets=true"
@@ -51,12 +53,10 @@ class ApiTests(unittest.TestCase):
                 invalid_status, _, invalid = _post_json(
                     f"http://127.0.0.1:{server.server_port}/api/targets/chain/parameters",
                     {"key": "known_password", "env_var": "INVALID-NAME"},
-                    origin="https://example.invalid",
                 )
                 ambiguous_status, _, ambiguous = _post_json(
                     f"http://127.0.0.1:{server.server_port}/api/targets/chain/parameters",
                     {"key": "known_password", "env_var": "PENPAL_SECRET", "value": "plaintext"},
-                    origin="https://example.invalid",
                 )
             finally:
                 _stop_server(server, thread)
@@ -116,7 +116,6 @@ class ApiTests(unittest.TestCase):
                 status, _, payload = _post_json(
                     f"http://127.0.0.1:{server.server_port}/api/targets",
                     {"host": "192.0.2.10", "name": "blocked"},
-                    origin="https://example.invalid",
                 )
                 read_status, _, read_payload = _raw_request(
                     server,
@@ -210,7 +209,6 @@ class ApiTests(unittest.TestCase):
                 status, _, payload = _post_json(
                     f"http://127.0.0.1:{server.server_port}/api/targets",
                     {"host": "10.10.10.5", "name": "chain"},
-                    origin="https://example.invalid",
                 )
             finally:
                 _stop_server(server, thread)
@@ -225,7 +223,6 @@ class ApiTests(unittest.TestCase):
                 status, _, payload = _post_json(
                     f"http://127.0.0.1:{server.server_port}/api/targets",
                     {"host": "10.10.10.5", "force": "false"},
-                    origin="https://example.invalid",
                 )
             finally:
                 _stop_server(server, thread)
@@ -291,24 +288,54 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(masked["evidence"][0]["value"], "<sensitive>")
         self.assertEqual(revealed["evidence"][0]["value"], "Winter2024!")
 
-    def test_ingest_rejects_file_paths_and_does_not_allow_cross_origin_reads(self) -> None:
+    def test_api_rejects_browser_origin_writes_and_ingest_file_paths(self) -> None:
         with TemporaryDirectory() as temp_dir:
             workspace = Workspace(temp_dir)
             workspace.create_target("10.10.10.5", name="chain")
 
             server, thread = _start_server(workspace)
             try:
-                status, headers, payload = _post_json(
+                cross_origin_status, headers, cross_origin_payload = _post_json(
+                    f"http://127.0.0.1:{server.server_port}/api/targets/chain/ingest",
+                    {"text": "User: daniel"},
+                    origin="https://example.invalid",
+                )
+                path_status, _, path_payload = _post_json(
                     f"http://127.0.0.1:{server.server_port}/api/targets/chain/ingest",
                     {"path": str(Path(temp_dir) / "outside-workspace.txt")},
-                    origin="https://example.invalid",
                 )
             finally:
                 _stop_server(server, thread)
 
-        self.assertEqual(status, 400)
-        self.assertEqual(payload["error"], "body.path is not supported; send tool output in body.text")
+        self.assertEqual(cross_origin_status, 403)
+        self.assertEqual(cross_origin_payload["error"], "browser-origin POST requests are not supported")
         self.assertNotIn("Access-Control-Allow-Origin", headers)
+        self.assertEqual(path_status, 400)
+        self.assertEqual(path_payload["error"], "body.path is not supported; send tool output in body.text")
+
+    def test_parse_nmap_api_accepts_inline_xml_and_rejects_file_paths(self) -> None:
+        with TemporaryDirectory() as temp_dir:
+            workspace = Workspace(temp_dir)
+            workspace.create_target("10.10.10.5", name="chain")
+            server, thread = _start_server(workspace)
+            try:
+                status, _, payload = _post_json(
+                    f"http://127.0.0.1:{server.server_port}/api/targets/chain/parse-nmap",
+                    {"text": API_NMAP_XML},
+                )
+                path_status, _, path_payload = _post_json(
+                    f"http://127.0.0.1:{server.server_port}/api/targets/chain/parse-nmap",
+                    {"path": str(Path(temp_dir) / "scan.xml")},
+                )
+            finally:
+                _stop_server(server, thread)
+
+        self.assertEqual(status, 200)
+        self.assertEqual(
+            [(item["protocol"], item["port"], item["name"]) for item in payload["services"]], [("tcp", 80, "http")]
+        )
+        self.assertEqual(path_status, 400)
+        self.assertEqual(path_payload["error"], "body.path is not supported; send Nmap XML in body.text")
 
     def test_ingest_response_masks_sensitive_values_unless_revealed(self) -> None:
         with TemporaryDirectory() as temp_dir:
@@ -321,12 +348,10 @@ class ApiTests(unittest.TestCase):
                 _, _, masked = _post_json(
                     base_url,
                     {"text": "password=Winter2024!\n", "source": "masked-response"},
-                    origin="https://example.invalid",
                 )
                 _, _, revealed = _post_json(
                     base_url,
                     {"text": "password=Winter2024!\n", "source": "revealed-response", "reveal_secrets": True},
-                    origin="https://example.invalid",
                 )
             finally:
                 _stop_server(server, thread)
@@ -340,11 +365,18 @@ def _get_json(url: str) -> dict[str, object]:
         return json.loads(response.read().decode("utf-8"))
 
 
-def _post_json(url: str, payload: dict[str, object], origin: str) -> tuple[int, object, dict[str, object]]:
+def _post_json(
+    url: str,
+    payload: dict[str, object],
+    origin: str | None = None,
+) -> tuple[int, object, dict[str, object]]:
+    headers = {"Content-Type": "text/plain"}
+    if origin:
+        headers["Origin"] = origin
     request = Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "text/plain", "Origin": origin},
+        headers=headers,
         method="POST",
     )
     try:
