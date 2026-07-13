@@ -4,6 +4,13 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 ## [Unreleased]
 
+## [1.0.0-rc.2] - 2026-07-12
+
+### Security
+
+- Reject entity declarations while parsing Nmap XML to prevent entity-expansion attacks.
+- Reject browser-origin API writes and accept inline Nmap XML instead of API-supplied filesystem paths.
+
 ## [1.0.0-rc.1] - 2026-07-12
 
 ### Changed
@@ -59,7 +66,8 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 - Initial deterministic core, workspace, playbooks, CLI/API, and project-local PI cockpit.
 
-[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.0-rc.1...HEAD
+[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.0-rc.2...HEAD
+[1.0.0-rc.2]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.2
 [1.0.0-rc.1]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.1
 [0.2.0-rc.3]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.3
 [0.2.0-rc.2]: https://github.com/yousifnazhat/penpal/releases/tag/v0.2.0-rc.2

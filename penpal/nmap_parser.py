@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from pathlib import Path
+from xml.etree.ElementTree import Element, ParseError
+
+from defusedxml import ElementTree as ET
+from defusedxml.common import DefusedXmlException
 
 from .models import Service
 
@@ -15,11 +18,25 @@ def parse_nmap_xml(path: str | Path, include_states: set[str] | None = None) -> 
     if not xml_path.exists():
         raise NmapParseError(f"Nmap XML not found: {xml_path}")
 
-    include_states = include_states or {"open"}
     try:
         root = ET.parse(xml_path).getroot()
-    except ET.ParseError as exc:
+    except (ParseError, DefusedXmlException) as exc:
         raise NmapParseError(f"Invalid Nmap XML: {xml_path}") from exc
+
+    return _parse_root(root, include_states)
+
+
+def parse_nmap_xml_text(text: str, include_states: set[str] | None = None) -> list[Service]:
+    try:
+        root = ET.fromstring(text)
+    except (ParseError, DefusedXmlException) as exc:
+        raise NmapParseError("Invalid Nmap XML") from exc
+
+    return _parse_root(root, include_states)
+
+
+def _parse_root(root: Element, include_states: set[str] | None) -> list[Service]:
+    include_states = include_states or {"open"}
 
     services: list[Service] = []
     for host in root.findall("host"):
@@ -52,7 +69,7 @@ def parse_nmap_xml(path: str | Path, include_states: set[str] | None = None) -> 
     return sorted(services, key=lambda svc: (svc.protocol, svc.port))
 
 
-def _attr(node: ET.Element | None, name: str) -> str:
+def _attr(node: Element | None, name: str) -> str:
     if node is None:
         return ""
     return node.get(name, "")

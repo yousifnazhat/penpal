@@ -6,14 +6,13 @@ import logging
 import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 from .advisor import build_suggestions
 from .context import build_context
 from .ingest import extract_evidence
 from .models import ParameterResolutionError, normalize_environment_variable_name
-from .nmap_parser import NmapParseError, parse_nmap_xml
+from .nmap_parser import NmapParseError, parse_nmap_xml_text
 from .scope import ScopeViolationError
 from .summary import render_summary
 from .workspace import TargetExistsError, TargetNotFoundError, Workspace, WorkspaceError
@@ -121,6 +120,7 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
 
         def do_POST(self) -> None:
             try:
+                self._reject_browser_origin()
                 path = _parts(self.path)
                 body = self._read_body()
                 if path == ["api", "targets"]:
@@ -134,10 +134,11 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
                     self._json({"target": target.to_dict()}, HTTPStatus.CREATED)
                 elif len(path) == 4 and path[:2] == ["api", "targets"] and path[3] == "parse-nmap":
                     workspace.require_target(path[2])
-                    xml_path = Path(_required_text(body, "path"))
+                    if "path" in body:
+                        raise ApiRequestError("body.path is not supported; send Nmap XML in body.text")
                     try:
-                        parsed = parse_nmap_xml(xml_path)
-                    except (NmapParseError, OSError) as exc:
+                        parsed = parse_nmap_xml_text(_required_text(body, "text"))
+                    except NmapParseError as exc:
                         raise ApiRequestError(f"unable to parse Nmap XML: {exc}") from exc
                     services = workspace.merge_services(path[2], parsed)
                     self._json({"services": [service.to_dict() for service in services]})
@@ -212,6 +213,10 @@ def make_handler(workspace: Workspace) -> type[BaseHTTPRequestHandler]:
 
         def log_message(self, fmt: str, *args: object) -> None:
             return
+
+        def _reject_browser_origin(self) -> None:
+            if self.headers.get("Origin") or self.headers.get("Sec-Fetch-Site"):
+                raise ApiRequestError("browser-origin POST requests are not supported", HTTPStatus.FORBIDDEN)
 
         def _read_body(self) -> dict[str, object]:
             if self.headers.get("Transfer-Encoding"):
