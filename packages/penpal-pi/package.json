@@ -1,6 +1,6 @@
 {
   "name": "@yousif_nazhat/penpal-pi",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PI cockpit for the PenPal Python core.",
   "license": "MIT",
   "keywords": ["pi-package", "penpal"],

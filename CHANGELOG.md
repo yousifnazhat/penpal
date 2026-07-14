@@ -4,6 +4,16 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-07-14
+
+### Added
+
+- Add responsive, color-aware PenPal startup artwork to the CLI and PI conversational cockpit.
+
+### Changed
+
+- Make the bare `penpal` command show a read-only environment summary and clear next step.
+
 ## [1.0.0] - 2026-07-13
 
 ### Added
@@ -99,7 +109,8 @@ Notable changes follow Keep a Changelog and semantic versioning.
 
 - Initial deterministic core, workspace, playbooks, CLI/API, and project-local PI cockpit.
 
-[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/yousifnazhat/penpal/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/yousifnazhat/penpal/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0
 [1.0.0-rc.4]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.4
 [1.0.0-rc.3]: https://github.com/yousifnazhat/penpal/releases/tag/v1.0.0-rc.3
